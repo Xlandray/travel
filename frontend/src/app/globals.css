@@ -54,6 +54,8 @@
 .text-muted-token { color: var(--color-text-muted); }
 .text-brand-token { color: var(--color-primary); }
 .text-primary-hover-token { color: var(--color-primary-hover); }
+.bg-brand-teal-soft-token { background-color: rgba(20, 184, 166, 0.1); }
+.border-brand-teal-token { border-color: rgba(20, 184, 166, 0.2); }
 
 /* Booking Status Badge Tokens */
 .badge-status-pending {
