@@ -13,11 +13,12 @@ async def register_user(user_in: UserCreate, session: SessionDep) -> UserRead:
     """Register a user without exposing password-related fields."""
 
     try:
-        return await UserService(session).register(user_in)
+        user = await UserService(session).register(user_in)
+        return UserRead.model_validate(user)
     except EmailAlreadyRegisteredError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
 
 
 @router.get("/me", response_model=UserRead)
 async def read_current_user(current_user: CurrentUser) -> UserRead:
-    return current_user
+    return UserRead.model_validate(current_user)

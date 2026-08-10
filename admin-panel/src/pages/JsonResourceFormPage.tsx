@@ -25,6 +25,10 @@ const writableFields: Record<string, Record<JsonResourceFormPageProps["mode"], s
     create: [],
     edit: ["full_name", "is_active", "is_superuser"],
   },
+  "tour-categories": {
+    create: ["name", "slug", "is_active"],
+    edit: ["name", "slug", "is_active"],
+  },
 };
 
 function selectWritableFields(

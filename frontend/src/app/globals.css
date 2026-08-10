@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-teal: #14b8a6;
+  --color-brand-teal-dark: #0d9488;
+  --color-brand-emerald: #10b981;
+  --color-brand-amber: #f59e0b;
+  --color-brand-rose: #f43f5e;
+  
+  --color-travel-bg: #f8fafc;
+  --color-travel-card: #ffffff;
+  --color-travel-border: #e2e8f0;
+}
+
+:root {
+  /* Çorlu Travel Design System Tokens */
+  --color-primary: #14b8a6;          /* Teal Brand Main */
+  --color-primary-hover: #0d9488;
+  --color-accent: #10b981;           /* Emerald Accent */
+  
+  --color-status-pending: #f59e0b;     /* Warning / Sepette */
+  --color-status-confirmed: #10b981;   /* Success / Ödendi */
+  --color-status-cancelled: #f43f5e;   /* Danger / İptal */
+  
+  --color-canvas: #f8fafc;           /* Light slate background */
+  --color-surface: #ffffff;          /* White card surface */
+  --color-border: #e2e8f0;           /* Light border */
+  
+  --color-text-main: #0f172a;        /* Dark slate text */
+  --color-text-subtle: #475569;      /* Subtitle text */
+  --color-text-muted: #64748b;       /* Muted text */
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-text-main);
+    font-family: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Enforced Design System Utility Classes */
+.bg-canvas-token { background-color: var(--color-canvas); }
+.bg-surface-token { background-color: var(--color-surface); }
+.border-token { border-color: var(--color-border); }
+
+.text-main-token { color: var(--color-text-main); }
+.text-subtle-token { color: var(--color-text-subtle); }
+.text-muted-token { color: var(--color-text-muted); }
+.text-brand-token { color: var(--color-primary); }
+
+/* Booking Status Badge Tokens */
+.badge-status-pending {
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.badge-status-confirmed {
+  background-color: #d1fae5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-status-cancelled {
+  background-color: #ffe4e6;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+/* Travel Button & Card Component Tokens */
+.btn-primary-token {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 14px 0 rgba(20, 184, 166, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary-token:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(20, 184, 166, 0.45);
+}
+
+.btn-danger-token {
+  background-color: var(--color-status-cancelled);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-danger-token:hover {
+  opacity: 0.85;
+}
+
+.card-token {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+.card-token:hover {
+  border-color: rgba(20, 184, 166, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.15), 0 8px 10px -6px rgba(20, 184, 166, 0.1);
+}

@@ -38,7 +38,7 @@ async def list_users(
     session: SessionDep, page: PageNumber = 1, page_size: PageSize = 25
 ) -> Page[UserRead]:
     data, total = await AdminUserService(session).list(page, page_size)
-    return Page(data=data, total=total)
+    return Page(data=[UserRead.model_validate(u) for u in data], total=total)
 
 
 @router.patch("/users/{user_id}", response_model=UserRead)
@@ -46,7 +46,8 @@ async def update_user(
     user_id: uuid.UUID, user_in: AdminUserUpdate, session: SessionDep
 ) -> UserRead:
     try:
-        return await AdminUserService(session).update(user_id, user_in)
+        user = await AdminUserService(session).update(user_id, user_in)
+        return UserRead.model_validate(user)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
 
@@ -54,7 +55,8 @@ async def update_user(
 @router.get("/users/{user_id}", response_model=UserRead)
 async def get_user(user_id: uuid.UUID, session: SessionDep) -> UserRead:
     try:
-        return await AdminUserService(session).get(user_id)
+        user = await AdminUserService(session).get(user_id)
+        return UserRead.model_validate(user)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
 
@@ -64,7 +66,7 @@ async def list_contents(
     session: SessionDep, page: PageNumber = 1, page_size: PageSize = 25
 ) -> Page[ContentRead]:
     data, total = await ContentService(session).list(page, page_size)
-    return Page(data=data, total=total)
+    return Page(data=[ContentRead.model_validate(c) for c in data], total=total)
 
 
 @router.post("/contents", response_model=ContentRead, status_code=status.HTTP_201_CREATED)
@@ -72,7 +74,8 @@ async def create_content(
     content_in: ContentCreate, session: SessionDep, current_user: CurrentSuperuser
 ) -> ContentRead:
     try:
-        return await ContentService(session).create(content_in, current_user.id)
+        content = await ContentService(session).create(content_in, current_user.id)
+        return ContentRead.model_validate(content)
     except ResourceConflictError as error:
         raise conflict(error) from error
 
@@ -80,7 +83,8 @@ async def create_content(
 @router.get("/contents/{content_id}", response_model=ContentRead)
 async def get_content(content_id: uuid.UUID, session: SessionDep) -> ContentRead:
     try:
-        return await ContentService(session).get(content_id)
+        content = await ContentService(session).get(content_id)
+        return ContentRead.model_validate(content)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
 
@@ -90,7 +94,8 @@ async def update_content(
     content_id: uuid.UUID, content_in: ContentUpdate, session: SessionDep
 ) -> ContentRead:
     try:
-        return await ContentService(session).update(content_id, content_in)
+        content = await ContentService(session).update(content_id, content_in)
+        return ContentRead.model_validate(content)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
     except ResourceConflictError as error:
@@ -110,13 +115,14 @@ async def list_settings(
     session: SessionDep, page: PageNumber = 1, page_size: PageSize = 25
 ) -> Page[SettingRead]:
     data, total = await SettingService(session).list(page, page_size)
-    return Page(data=data, total=total)
+    return Page(data=[SettingRead.model_validate(s) for s in data], total=total)
 
 
 @router.post("/settings", response_model=SettingRead, status_code=status.HTTP_201_CREATED)
 async def create_setting(setting_in: SettingCreate, session: SessionDep) -> SettingRead:
     try:
-        return await SettingService(session).create(setting_in)
+        setting = await SettingService(session).create(setting_in)
+        return SettingRead.model_validate(setting)
     except ResourceConflictError as error:
         raise conflict(error) from error
 
@@ -124,7 +130,8 @@ async def create_setting(setting_in: SettingCreate, session: SessionDep) -> Sett
 @router.get("/settings/{setting_id}", response_model=SettingRead)
 async def get_setting(setting_id: uuid.UUID, session: SessionDep) -> SettingRead:
     try:
-        return await SettingService(session).get(setting_id)
+        setting = await SettingService(session).get(setting_id)
+        return SettingRead.model_validate(setting)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
 
@@ -134,7 +141,8 @@ async def update_setting(
     setting_id: uuid.UUID, setting_in: SettingUpdate, session: SessionDep
 ) -> SettingRead:
     try:
-        return await SettingService(session).update(setting_id, setting_in)
+        setting = await SettingService(session).update(setting_id, setting_in)
+        return SettingRead.model_validate(setting)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
     except ResourceConflictError as error:

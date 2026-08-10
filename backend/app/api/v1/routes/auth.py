@@ -1,14 +1,16 @@
+import uuid
 from typing import Annotated
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 
 from app.api.deps import SessionDep
 from app.core.email import send_email
-from app.core.security import create_access_token
+from app.core.security import create_access_token, decode_access_token, hash_password
 from app.domain.exceptions import InvalidCredentialsError
-from app.schemas.auth import Token
+from app.schemas.auth import LoginRequest, Token
 from app.schemas.base import Schema
 from app.services.user_service import UserService
 
@@ -19,13 +21,17 @@ class ForgotPasswordRequest(Schema):
     email: EmailStr
 
 
-@router.post("/token", response_model=Token)
+class ResetPasswordRequest(Schema):
+    token: str
+    new_password: str = Field(min_length=12, max_length=128)
+
+
+@router.post("/token", response_model=Token, summary="OAuth2 Form Girişi")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
-    """Exchange valid credentials for a short-lived OAuth2 bearer token."""
-
+    """Exchange valid form credentials for a short-lived OAuth2 bearer token."""
     try:
         user = await UserService(session).authenticate(form_data.username, form_data.password)
     except InvalidCredentialsError as error:
@@ -38,7 +44,25 @@ async def login_for_access_token(
     return Token(access_token=create_access_token(str(user.id)))
 
 
-@router.post("/forgot-password")
+@router.post("/login", response_model=Token, summary="JSON Giriş Endpoint'i")
+async def login_json(
+    credentials: LoginRequest,
+    session: SessionDep,
+) -> Token:
+    """Exchange valid JSON credentials for a short-lived OAuth2 bearer token."""
+    try:
+        user = await UserService(session).authenticate(credentials.email, credentials.password)
+    except InvalidCredentialsError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="E-posta veya şifre hatalı.",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from error
+
+    return Token(access_token=create_access_token(str(user.id)))
+
+
+@router.post("/forgot-password", summary="Şifremi Unuttum")
 async def request_password_reset(
     request_in: ForgotPasswordRequest,
     session: SessionDep,
@@ -63,3 +87,31 @@ async def request_password_reset(
         pass
 
     return {"message": "Sıfırlama talimatları e-posta adresinize gönderildi."}
+
+
+@router.post("/reset-password", summary="Şifreyi Token ile Sıfırla")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    session: SessionDep,
+) -> dict[str, str]:
+    """Reset a user's password using the token emailed by forgot-password."""
+    try:
+        subject = decode_access_token(payload.token)
+        user_id = uuid.UUID(subject)
+        try:
+            user = await UserService(session).get_active_user(user_id)
+        except InvalidCredentialsError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz veya süresi dolmuş sıfırlama bağlantısı.",
+            ) from error
+    except (jwt.InvalidTokenError, jwt.ExpiredSignatureError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Geçersiz veya süresi dolmuş sıfırlama bağlantısı.",
+        ) from error
+
+    user.hashed_password = hash_password(payload.new_password)
+    await session.commit()
+
+    return {"message": "Şifreniz başarıyla güncellendi."}

@@ -1,0 +1,151 @@
+import uuid
+from datetime import date
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+
+from app.api.deps import SessionDep
+from app.models.booking import Booking
+from app.models.tour import Tour, TourDeparture
+from app.schemas.tour import TourDepartureResponse, TourDepartureUpdate
+
+router = APIRouter()
+
+
+class TourDepartureCreate(BaseModel):
+    tour_id: uuid.UUID
+    start_date: date
+    end_date: date
+    price: float = Field(..., ge=0)
+    total_quota: int = Field(..., ge=1)
+    available_seats: int | None = None
+    is_active: bool = True
+
+
+@router.get("", response_model=list[TourDepartureResponse])
+@router.get("/", response_model=list[TourDepartureResponse])
+async def list_tour_departures(
+    session: SessionDep,
+    tour_id: Annotated[uuid.UUID | None, Query()] = None,
+) -> list[TourDepartureResponse]:
+    """Lists tour departures."""
+    stmt = select(TourDeparture)
+    if tour_id:
+        stmt = stmt.where(TourDeparture.tour_id == tour_id)
+    result = await session.execute(stmt)
+    departures = result.scalars().all()
+    return [TourDepartureResponse.model_validate(d) for d in departures]
+
+
+@router.post("", response_model=TourDepartureResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TourDepartureResponse, status_code=status.HTTP_201_CREATED)
+async def create_tour_departure(
+    departure_in: TourDepartureCreate,
+    session: SessionDep,
+) -> TourDepartureResponse:
+    """Creates a new tour departure / bus quota stock."""
+    # Check if tour exists
+    tour = await session.get(Tour, departure_in.tour_id)
+    if not tour:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Belirtilen tur bulunamadı.",
+        )
+
+    available = (
+        departure_in.available_seats
+        if departure_in.available_seats is not None
+        else departure_in.total_quota
+    )
+
+    new_departure = TourDeparture(
+        tour_id=departure_in.tour_id,
+        start_date=departure_in.start_date,
+        end_date=departure_in.end_date,
+        price=departure_in.price,
+        total_quota=departure_in.total_quota,
+        available_seats=available,
+        is_active=departure_in.is_active,
+    )
+    session.add(new_departure)
+    await session.commit()
+    await session.refresh(new_departure)
+
+    return TourDepartureResponse.model_validate(new_departure)
+
+
+@router.get(
+    "/{departure_id}",
+    response_model=TourDepartureResponse,
+    summary="Sefer Detaylarini Getir",
+)
+async def get_tour_departure(
+    departure_id: uuid.UUID,
+    session: SessionDep,
+) -> TourDepartureResponse:
+    """Get a single tour departure by id."""
+    departure = await session.get(TourDeparture, departure_id)
+    if not departure:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sefer bulunamadı.",
+        )
+    return TourDepartureResponse.model_validate(departure)
+
+
+@router.patch(
+    "/{departure_id}",
+    response_model=TourDepartureResponse,
+    summary="Sefer Guncelle",
+)
+async def update_tour_departure(
+    departure_id: uuid.UUID,
+    departure_in: TourDepartureUpdate,
+    session: SessionDep,
+) -> TourDepartureResponse:
+    """Partially update a tour departure (dates, price, quota, active flag)."""
+    departure = await session.get(TourDeparture, departure_id)
+    if not departure:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sefer bulunamadı.",
+        )
+
+    data = departure_in.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(departure, field, value)
+
+    await session.commit()
+    await session.refresh(departure)
+    return TourDepartureResponse.model_validate(departure)
+
+
+@router.delete(
+    "/{departure_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Seferi Sil",
+)
+async def delete_tour_departure(
+    departure_id: uuid.UUID,
+    session: SessionDep,
+) -> None:
+    """Delete a tour departure if it has no bookings."""
+    departure = await session.get(TourDeparture, departure_id)
+    if not departure:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sefer bulunamadı.",
+        )
+
+    booking_stmt = select(Booking.id).where(Booking.departure_id == departure_id).limit(1)
+    result = await session.execute(booking_stmt)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Bu sefere bağlı rezervasyonlar var; silinemez.",
+        )
+
+    await session.delete(departure)
+    await session.commit()

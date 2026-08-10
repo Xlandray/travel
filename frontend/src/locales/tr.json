@@ -1,0 +1,56 @@
+{
+  "header": {
+    "all_tours": "Tüm Turlar",
+    "daily_tours": "Günübirlik",
+    "contact": "İletişim",
+    "agent_login": "Acente Girişi",
+    "logo_subtitle": "Tur Acentesi & Seyahat Hizmetleri"
+  },
+  "hero": {
+    "badge": "Çorlu Çıkışlı Lüks Otobüslü Turlar",
+    "title_prefix": "Yeni Maceralara",
+    "title_highlight": "Yelken Açın",
+    "subtitle": "Çorlu çıkışlı en iyi günübirlik ve konaklamalı tur paketlerini keşfedin. Güvenli stok kilitleme ve anında yer garantisi ile keyifli yolculuklar.",
+    "badge_tracking": "%100 Canlı Koltuk Takibi",
+    "badge_points": "Orion AVM & Çorlu Merkez Kalkışlı",
+    "badge_support": "7/24 Kesintisiz Rezervasyon"
+  },
+  "search": {
+    "boarding_point": "Kalkış Noktası",
+    "all_points": "Tüm Biniş Noktaları",
+    "category": "Kategori",
+    "all_categories": "Tüm Kategoriler",
+    "date": "Tarih",
+    "button": "Tur Ara"
+  },
+  "tours": {
+    "category_badge": "Popüler Rotalar",
+    "title": "Öne Çıkan Turlar",
+    "subtitle": "Günübirlik ve konaklamalı Çorlu çıkışlı özel tur programları.",
+    "clear_filters": "Filtreleri Temizle",
+    "starting_from": "Başlangıç Fiyatı",
+    "inspect_details": "Detayları İncele →",
+    "days_nights": "{days} Gün {nights} Gece",
+    "daily": "Günübirlik",
+    "not_found": "Aradığınız kriterlere uygun tur bulunamadı."
+  },
+  "booking": {
+    "modal_subtitle": "Tur Detay & Hızlı Rezervasyon",
+    "departure_date": "Kalkış Tarihi / Sefer",
+    "boarding_point": "Biniş Noktası",
+    "unit_price": "Kişi Başı Fiyat",
+    "seat_count": "Koltuk Sayısı (Max 10)",
+    "total_price": "Toplam Tutar:",
+    "submit_button": "Rezervasyona Devam Et",
+    "locking": "Koltuklar Kilitleniyor...",
+    "success_title": "Rezervasyon Başarılı!",
+    "close": "Kapat",
+    "login_required": "Rezervasyon tamamlayabilmek için lütfen 'Acente Girişi' yapın."
+  },
+  "footer": {
+    "rights": "Tüm hakları saklıdır.",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Kullanım Şartları",
+    "kvkk": "KVKK Aydınlatma"
+  }
+}

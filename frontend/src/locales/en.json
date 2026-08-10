@@ -1,0 +1,56 @@
+{
+  "header": {
+    "all_tours": "All Tours",
+    "daily_tours": "Day Trips",
+    "contact": "Contact",
+    "agent_login": "Agent Login",
+    "logo_subtitle": "Tour Agency & Travel Services"
+  },
+  "hero": {
+    "badge": "Luxury Bus Tours Departing from Çorlu",
+    "title_prefix": "Embark on",
+    "title_highlight": "New Adventures",
+    "subtitle": "Discover the finest day trips and multi-day tour packages departing from Çorlu. Enjoy pleasant journeys with safe stock locking and instant seat guarantees.",
+    "badge_tracking": "100% Real-Time Seat Tracking",
+    "badge_points": "Departures from Orion Mall & Çorlu Center",
+    "badge_support": "24/7 Uninterrupted Booking"
+  },
+  "search": {
+    "boarding_point": "Boarding Point",
+    "all_points": "All Pick-Up Locations",
+    "category": "Category",
+    "all_categories": "All Categories",
+    "date": "Date",
+    "button": "Search Tours"
+  },
+  "tours": {
+    "category_badge": "Popular Routes",
+    "title": "Featured Tours",
+    "subtitle": "Exclusive day trips and accommodation packages departing from Çorlu.",
+    "clear_filters": "Clear Filters",
+    "starting_from": "Starting Price",
+    "inspect_details": "View Details →",
+    "days_nights": "{days} Days {nights} Nights",
+    "daily": "Day Trip",
+    "not_found": "No tours found matching your search criteria."
+  },
+  "booking": {
+    "modal_subtitle": "Tour Details & Express Booking",
+    "departure_date": "Departure Date / Trip",
+    "boarding_point": "Boarding Point",
+    "unit_price": "Price per Person",
+    "seat_count": "Seat Count (Max 10)",
+    "total_price": "Total Price:",
+    "submit_button": "Proceed to Booking",
+    "locking": "Locking Seats...",
+    "success_title": "Booking Successful!",
+    "close": "Close",
+    "login_required": "Please perform 'Agent Login' to complete your reservation."
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "kvkk": "GDPR / KVKK Notice"
+  }
+}

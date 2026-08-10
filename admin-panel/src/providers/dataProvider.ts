@@ -47,19 +47,19 @@ export const dataProvider: DataProvider = {
     );
     return { data: records };
   },
-  create: async <TData extends BaseRecord = BaseRecord, TVariables = {}>(
+  create: async <TData extends BaseRecord = BaseRecord, TVariables = object>(
     { resource, variables }: CreateParams<TVariables>,
   ): Promise<CreateResponse<TData>> => {
     const response = await axiosInstance.post<TData>(`/${resource}`, variables);
     return { data: response.data };
   },
-  update: async <TData extends BaseRecord = BaseRecord, TVariables = {}>(
+  update: async <TData extends BaseRecord = BaseRecord, TVariables = object>(
     { resource, id, variables }: UpdateParams<TVariables>,
   ): Promise<UpdateResponse<TData>> => {
     const response = await axiosInstance.patch<TData>(`/${resource}/${id}`, variables);
     return { data: response.data };
   },
-  deleteOne: async <TData extends BaseRecord = BaseRecord, TVariables = {}>(
+  deleteOne: async <TData extends BaseRecord = BaseRecord, TVariables = object>(
     { resource, id }: DeleteOneParams<TVariables>,
   ): Promise<DeleteOneResponse<TData>> => {
     await axiosInstance.delete(`/${resource}/${id}`);
