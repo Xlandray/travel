@@ -9,7 +9,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-1">
             <div className="py-1">
-              <Logo className="w-[350px] h-[100px]" />
+              <Logo className="w-full max-w-[240px] sm:max-w-[350px] h-[72px] sm:h-[100px]" />
             </div>
             <p className="text-sm text-muted-token leading-relaxed">
               Çorlu çıkışlı günübirlik ve konaklamalı tur organizasyonlarında güvenli stok garantisi ve konforlu seyahat hizmetleri.
@@ -64,7 +64,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-token">
           <p>© {new Date().getFullYear()} Çorlu Travel (Armonitex Seyahat Sistemleri). Tüm hakları saklıdır.</p>
-          <div className="flex space-x-6 mt-4 sm:mt-0">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 sm:mt-0 justify-center sm:justify-end">
             <a href="#" className="hover:text-main-token transition-colors">Gizlilik Politikası</a>
             <a href="#" className="hover:text-main-token transition-colors">Kullanım Şartları</a>
             <a href="#" className="hover:text-main-token transition-colors">KVKK Aydınlatma</a>

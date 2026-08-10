@@ -53,7 +53,7 @@ export default async function ContentsListingPage() {
 
       <section className="bg-navy-token text-white-token py-16 px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-4xl mx-auto space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight">Haberler &amp; Tamamlanan Projeler</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Haberler &amp; Tamamlanan Projeler</h1>
           <p className="text-cyan-100/90 text-base max-w-xl mx-auto">
             1998&apos;den bu yana imza attığımız büyük ölçekli açıkhava baskı projeleri ve sektör gelişmeleri.
           </p>

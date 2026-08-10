@@ -28,7 +28,7 @@ export default function IletisimPage() {
         {/* Page Title Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <span className="badge-cyan-token font-bold text-xs">Ümraniye Üretim Tesisi</span>
-          <h1 className="text-4xl font-extrabold text-main-token tracking-tight">Bizimle İletişime Geçin</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-main-token tracking-tight">Bizimle İletişime Geçin</h1>
           <p className="text-subtle-token text-base">
             Projenizin detaylarını iletin veya Ümraniye tesisimizi ziyaret ederek baskı numunelerimizi yerinde inceleyin.
           </p>

@@ -189,16 +189,16 @@ function CheckoutContent() {
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                 Kaç Kişi Katılacaksınız?
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <input
                   type="number"
                   min={1}
                   max={Math.min(10, departure?.available_seats || 10)}
                   value={seatCount}
                   onChange={(e) => setSeatCount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-400 transition-colors"
+                  className="w-full sm:w-auto bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-400 transition-colors"
                 />
-                <span className="text-xs text-slate-400 whitespace-nowrap">
+                <span className="text-xs text-slate-400">
                   (Kalan Stok: <strong className="text-teal-400">{departure?.available_seats}</strong> koltuk)
                 </span>
               </div>
@@ -250,7 +250,7 @@ function CheckoutContent() {
                 <span className="text-base font-bold text-white">{departure?.tour_title}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
                   <span className="text-xs text-slate-500 uppercase font-bold block">Gidiş Tarihi</span>
                   <span className="text-slate-300 font-semibold">{departure?.start_date}</span>

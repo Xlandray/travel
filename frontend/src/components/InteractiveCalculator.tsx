@@ -89,7 +89,7 @@ export default function InteractiveCalculator({ initialSlug }: InteractiveCalcul
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <div>
               <label className="block text-xs font-bold text-main-token uppercase tracking-wider mb-1.5">
                 Adet / Miktar

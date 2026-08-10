@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen bg-canvas-token flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans text-main-token">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex justify-center">
-          <Logo className="h-14" />
+          <Logo className="w-full max-w-[240px] sm:max-w-[350px] h-16 sm:h-[100px]" />
         </Link>
       </div>
 
