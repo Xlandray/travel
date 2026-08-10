@@ -53,6 +53,7 @@
 .text-subtle-token { color: var(--color-text-subtle); }
 .text-muted-token { color: var(--color-text-muted); }
 .text-brand-token { color: var(--color-primary); }
+.text-primary-hover-token { color: var(--color-primary-hover); }
 
 /* Booking Status Badge Tokens */
 .badge-status-pending {
@@ -71,6 +72,35 @@
   background-color: #ffe4e6;
   color: #e11d48;
   border: 1px solid #fecdd3;
+}
+
+/* Semantic Alert Tokens */
+.text-danger-token { color: var(--color-status-cancelled); }
+.bg-danger-soft-token { background-color: #ffe4e6; }
+.border-danger-token { border-color: #fecdd3; }
+
+.text-success-token { color: var(--color-status-confirmed); }
+.bg-success-soft-token { background-color: #d1fae5; }
+.border-success-token { border-color: #a7f3d0; }
+
+/* Input Token */
+.input-token {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.input-token:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+}
+.input-token::placeholder {
+  color: var(--color-text-muted);
 }
 
 /* Travel Button & Card Component Tokens */

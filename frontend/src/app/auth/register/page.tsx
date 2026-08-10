@@ -52,7 +52,7 @@ export default function RegisterPage() {
             name="full_name"
             type="text"
             required
-            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-main-token"
+            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-sm text-main-token"
             placeholder="Mert Simge"
           />
         </div>
@@ -63,7 +63,7 @@ export default function RegisterPage() {
             name="email"
             type="email"
             required
-            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-main-token"
+            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-sm text-main-token"
             placeholder="ornek@armonitex.com"
           />
         </div>
@@ -74,7 +74,7 @@ export default function RegisterPage() {
             name="password"
             type="password"
             required
-            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-main-token"
+            className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-sm text-main-token"
             placeholder="••••••••"
           />
         </div>
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         </button>
 
         <div className="text-center text-sm">
-          <Link href="/auth/login" className="font-semibold text-brand-token hover:text-blue-700">
+          <Link href="/auth/login" className="font-semibold text-brand-token hover:text-primary-hover-token">
             Zaten hesabınız var mı? Giriş yapın
           </Link>
         </div>

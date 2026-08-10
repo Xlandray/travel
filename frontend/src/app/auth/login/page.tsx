@@ -74,15 +74,15 @@ export default function LoginPage() {
         <h2 className="text-center text-2xl font-extrabold tracking-tight text-main-token">
           Hesabınıza Giriş Yapın
         </h2>
-        <p className="text-center text-xs text-slate-400 mt-1">
+        <p className="text-center text-xs text-muted-token mt-1">
           Çorlu Travel Acente ve Kullanıcı Portalı
         </p>
       </div>
 
-      <form className="space-y-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl" onSubmit={handleLogin}>
+      <form className="space-y-4 card-token bg-surface-token border-token p-6 rounded-2xl shadow-xl" onSubmit={handleLogin}>
         {errorMessage && (
-          <div className="p-3 bg-rose-950/70 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-            <svg className="w-4 h-4 flex-shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-danger-soft-token border border-danger-token rounded-xl text-danger-token text-xs flex items-center gap-2">
+            <svg className="w-4 h-4 flex-shrink-0 text-danger-token" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>{errorMessage}</span>
@@ -90,36 +90,36 @@ export default function LoginPage() {
         )}
 
         <div>
-          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-1">
             E-posta Adresi
           </label>
           <input
             name="email"
             type="email"
             required
-            className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-teal-400 transition-colors"
+            className="input-token"
             placeholder="ornek@corlutravel.com"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-1">
             Şifre
           </label>
           <input
             name="password"
             type="password"
             required
-            className="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-teal-400 transition-colors"
+            className="input-token"
             placeholder="••••••••"
           />
         </div>
 
         <div className="flex items-center justify-between text-xs pt-1">
-          <Link href="/auth/register" className="font-semibold text-teal-400 hover:text-teal-300">
+          <Link href="/auth/register" className="font-semibold text-brand-token hover:text-primary-hover-token">
             Hesap oluştur
           </Link>
-          <Link href="/auth/forgot-password" className="font-semibold text-slate-400 hover:text-slate-300">
+          <Link href="/auth/forgot-password" className="font-semibold text-subtle-token hover:text-main-token">
             Şifremi unuttum
           </Link>
         </div>
@@ -131,7 +131,7 @@ export default function LoginPage() {
         >
           {isLoading ? (
             <>
-              <span className="w-4 h-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+              <span className="w-4 h-4 rounded-full border-2 border-white-token border-t-transparent animate-spin" />
               Giriş yapılıyor...
             </>
           ) : (

@@ -65,7 +65,7 @@ function ResetPasswordContent() {
   if (!token) {
     return (
       <div className="space-y-6 text-center">
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg font-semibold">
+        <div className="p-4 bg-danger-soft-token border border-danger-token text-danger-token text-sm rounded-lg font-semibold">
           Geçersiz sıfırlama bağlantısı. E-posta kutunuzdaki tam bağlantıyı kullandığınızdan emin olun.
         </div>
         <Link href="/auth/forgot-password" className="font-semibold text-brand-token">
@@ -87,13 +87,13 @@ function ResetPasswordContent() {
       </div>
 
       {isSubmitted ? (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg text-center font-semibold">
+        <div className="p-4 bg-success-soft-token border border-success-token text-success-token text-sm rounded-lg text-center font-semibold">
           Şifreniz başarıyla güncellendi!
         </div>
       ) : (
         <form className="space-y-4" onSubmit={handleReset}>
           {errorMessage && (
-            <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-rose-700 text-xs">
+            <div className="p-3 bg-danger-soft-token border border-danger-token rounded-xl text-danger-token text-xs">
               {errorMessage}
             </div>
           )}
@@ -105,7 +105,7 @@ function ResetPasswordContent() {
               type="password"
               required
               minLength={12}
-              className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-main-token"
+              className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-sm text-main-token"
               placeholder="En az 12 karakter"
             />
           </div>
@@ -117,7 +117,7 @@ function ResetPasswordContent() {
               type="password"
               required
               minLength={12}
-              className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-main-token"
+              className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md shadow-xs focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] text-sm text-main-token"
               placeholder="Şifrenizi tekrar girin"
             />
           </div>
@@ -133,7 +133,7 @@ function ResetPasswordContent() {
       )}
 
       <div className="text-center text-sm">
-        <Link href="/auth/login" className="font-semibold text-brand-token hover:text-blue-700">
+        <Link href="/auth/login" className="font-semibold text-brand-token hover:text-primary-hover-token">
           ← Giriş sayfasına dön
         </Link>
       </div>
