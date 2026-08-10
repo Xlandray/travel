@@ -16,6 +16,7 @@ import { TourEdit } from "./pages/tours/edit";
 import { TourDepartureCreate } from "./pages/tour-departures/create";
 import { TourDepartureEdit } from "./pages/tour-departures/edit";
 import { TourCategoryForm } from "./pages/tour-categories/TourCategoryForm";
+import { ContentForm } from "./pages/contents/ContentForm";
 import { authProvider } from "./providers/authProvider";
 import { dataProvider } from "./providers/dataProvider";
 
@@ -140,23 +141,11 @@ export default function App() {
                 />
                 <Route
                   path="/contents/create"
-                  element={
-                    <JsonResourceFormPage
-                      resource="admin/contents"
-                      title="İçerik oluştur"
-                      mode="create"
-                    />
-                  }
+                  element={<ContentForm mode="create" />}
                 />
                 <Route
                   path="/contents/edit/:id"
-                  element={
-                    <JsonResourceFormPage
-                      resource="admin/contents"
-                      title="İçerik düzenle"
-                      mode="edit"
-                    />
-                  }
+                  element={<ContentForm mode="edit" />}
                 />
                 <Route
                   path="/settings"
