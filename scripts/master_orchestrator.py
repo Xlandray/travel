@@ -17,7 +17,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
-REPORT_JSON_PATH = os.path.join("armonitex-web", "agent-report", "test-results.json")
+REPORT_JSON_PATH = os.path.join("frontend", "agent-report", "test-results.json")
 OUTPUT_MD_PATH = os.path.join("agent-report", "master-orchestration-summary.md")
 
 def get_docker_logs():
