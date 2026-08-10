@@ -20,7 +20,12 @@ Armonitex Travel monorepo: three packages + ops tooling, all orchestrated via Do
 4. DB has **no host port mapping**; inspect via `docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"`. `docker-compose.prod.yml` maps it — prod only.
 5. First admin (idempotent, run once): `docker compose run --rm --no-deps -e ADMIN_EMAIL -e ADMIN_PASSWORD api python -m app.scripts.bootstrap_superuser`.
 
-Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend/public`; restart the relevant container after changes to `pyproject.toml`, `package.json`, docker files, or alembic config.
+Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend/public`. Restart/rebuild policy per container:
+
+- `api` runs uvicorn `--reload` → mount `backend/app` is live; restart only after changes to `pyproject.toml`, alembic config, or lifespan behavior.
+- `admin-panel` runs Vite dev server → mount `admin-panel/src` is live.
+- `armonitex-web` runs **`next start` (production build)** — the Dockerfile compiles `frontend/src` at image build time, so mount `frontend/src`/`frontend/public` does **NOT** take effect on their own. **Always run `docker compose up -d --build armonitex-web`** after any frontend code change; a plain `docker compose restart` keeps serving the stale build. (This is why the live checkout looked "dark/grey" after the token refactor — the old build was still being served.)
+- Any change to `package.json`, docker files, or alembic config requires a full rebuild of the affected service.
 
 ## Backend
 
@@ -35,6 +40,7 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 ## Frontend (customer site)
 
 - **Next.js 16 has breaking API changes.** Read the relevant guide in `node_modules/next/dist/docs/` before writing code — see `frontend/AGENTS.md`, which is auto-reappended by `next dev`; keep it committed, don't fight it.
+- **Live container gotcha:** the `armonitex-web` container serves a **production build** (`next start`), so after ANY change under `frontend/src` or `frontend/public` you must run `docker compose up -d --build armonitex-web` — restart alone serves the stale build and the change will appear "not working".
 - **Design system rule (ADR-0007):** ad-hoc color classes (`bg-slate-*`, `gray-*`, `black`, `zinc-*`) are banned in components. Use the semantic token classes (`.bg-surface-token`, `.text-brand-token`, `.card-token`, `.btn-primary-token`, etc.) defined in `src/app/globals.css`; change colors only via the `--color-*` variables there.
 - i18n via `src/locales/{tr,en}.json` + `src/lib/i18n.ts` (dictionary-based switcher).
 - Commands (from `frontend/`): `npm run lint` (eslint), `npm run build`. E2E: `npm run test:e2e` (Playwright, chromium only) — requires a built+served app on `:3000`; the config webserver runs `npm run start` and writes JSON to `frontend/agent-report/test-results.json`, which `scripts/master_orchestrator.py` consumes.
