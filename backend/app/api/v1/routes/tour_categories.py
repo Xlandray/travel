@@ -1,10 +1,12 @@
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import func, select
 
 from app.api.deps import SessionDep
 from app.models.tour import TourCategory
+from app.schemas.pagination import Page
 from app.schemas.tour import (
     TourCategoryCreate,
     TourCategoryResponse,
@@ -20,12 +22,46 @@ def _generate_slug(name: str) -> str:
     return "-".join(clean.split())
 
 
-@router.get("", response_model=list[TourCategoryResponse], summary="Kategorileri Listele")
-@router.get("/", response_model=list[TourCategoryResponse], summary="Kategorileri Listele")
-async def list_categories(session: SessionDep) -> list[TourCategoryResponse]:
-    """List all active tour categories."""
-    stmt = select(TourCategory).where(TourCategory.is_active.is_(True))
-    result = await session.execute(stmt)
+@router.get(
+    "",
+    response_model=list[TourCategoryResponse] | Page[TourCategoryResponse],
+    summary="Kategorileri Listele",
+)
+@router.get(
+    "/",
+    response_model=list[TourCategoryResponse] | Page[TourCategoryResponse],
+    summary="Kategorileri Listele",
+)
+async def list_categories(
+    session: SessionDep,
+    page: Annotated[int | None, Query(ge=1)] = None,
+    page_size: Annotated[int | None, Query(ge=1, le=100)] = None,
+) -> list[TourCategoryResponse] | Page[TourCategoryResponse]:
+    """List all active tour categories.
+
+    When `page`/`page_size` are provided, returns a Refine-compatible
+    `Page[TourCategoryResponse]` payload ({data: [...], total}); otherwise
+    returns a plain array.
+    """
+    base_stmt = select(TourCategory).where(TourCategory.is_active.is_(True))
+    count_stmt = (
+        select(func.count()).select_from(TourCategory).where(TourCategory.is_active.is_(True))
+    )
+
+    if page is not None and page_size is not None:
+        total = (await session.execute(count_stmt)).scalar_one()
+        result = await session.execute(
+            base_stmt.order_by(TourCategory.name.asc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        categories = result.scalars().all()
+        return Page[TourCategoryResponse](
+            data=[TourCategoryResponse.model_validate(c) for c in categories],
+            total=total,
+        )
+
+    result = await session.execute(base_stmt)
     categories = result.scalars().all()
     return [TourCategoryResponse.model_validate(c) for c in categories]
 

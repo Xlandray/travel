@@ -4,11 +4,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.deps import SessionDep
 from app.models.booking import Booking
 from app.models.tour import Tour, TourDeparture
+from app.schemas.pagination import Page
 from app.schemas.tour import TourDepartureResponse, TourDepartureUpdate
 
 router = APIRouter()
@@ -24,17 +25,40 @@ class TourDepartureCreate(BaseModel):
     is_active: bool = True
 
 
-@router.get("", response_model=list[TourDepartureResponse])
-@router.get("/", response_model=list[TourDepartureResponse])
+@router.get("", response_model=list[TourDepartureResponse] | Page[TourDepartureResponse])
+@router.get("/", response_model=list[TourDepartureResponse] | Page[TourDepartureResponse])
 async def list_tour_departures(
     session: SessionDep,
     tour_id: Annotated[uuid.UUID | None, Query()] = None,
-) -> list[TourDepartureResponse]:
-    """Lists tour departures."""
-    stmt = select(TourDeparture)
+    page: Annotated[int | None, Query(ge=1)] = None,
+    page_size: Annotated[int | None, Query(ge=1, le=100)] = None,
+) -> list[TourDepartureResponse] | Page[TourDepartureResponse]:
+    """Lists tour departures.
+
+    When `page`/`page_size` are provided, returns a Refine-compatible
+    `Page[TourDepartureResponse]` payload ({data: [...], total}); otherwise
+    returns a plain array.
+    """
+    base_stmt = select(TourDeparture)
+    count_stmt = select(func.count()).select_from(TourDeparture)
     if tour_id:
-        stmt = stmt.where(TourDeparture.tour_id == tour_id)
-    result = await session.execute(stmt)
+        base_stmt = base_stmt.where(TourDeparture.tour_id == tour_id)
+        count_stmt = count_stmt.where(TourDeparture.tour_id == tour_id)
+
+    if page is not None and page_size is not None:
+        total = (await session.execute(count_stmt)).scalar_one()
+        result = await session.execute(
+            base_stmt.order_by(TourDeparture.start_date.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        departures = result.scalars().all()
+        return Page[TourDepartureResponse](
+            data=[TourDepartureResponse.model_validate(d) for d in departures],
+            total=total,
+        )
+
+    result = await session.execute(base_stmt)
     departures = result.scalars().all()
     return [TourDepartureResponse.model_validate(d) for d in departures]
 

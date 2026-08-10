@@ -3,12 +3,13 @@ from datetime import date as date_type
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import SessionDep
 from app.models.booking import Booking
 from app.models.tour import BoardingPoint, Tour, TourCategory, TourDeparture, TourImage
+from app.schemas.pagination import Page
 from app.schemas.tour import (
     BoardingPointResponse,
     TourCreate,
@@ -91,30 +92,61 @@ def generate_slug(title: str) -> str:
     return "-".join(clean.split())
 
 
-@router.get("", response_model=list[TourResponse], summary="Aktif Turlari Listele")
+@router.get(
+    "", response_model=list[TourResponse] | Page[TourResponse], summary="Aktif Turlari Listele"
+)
 async def list_tours(
     session: SessionDep,
     boarding_point: Annotated[str | None, Query(description="Kalkış noktası filtresi")] = None,
     search_date: Annotated[date_type | None, Query(description="Kalkış tarihi filtresi")] = None,
     category_id: Annotated[uuid.UUID | None, Query(description="Kategori filtresi")] = None,
-) -> list[TourResponse]:
-    """List all active tours with pricing, departures, categories, and gallery."""
-    stmt = (
-        select(Tour)
-        .where(Tour.is_active.is_(True))
-        .options(
-            selectinload(Tour.departures),
-            selectinload(Tour.boarding_points),
-            selectinload(Tour.category),
-            selectinload(Tour.images),
-        )
-    )
+    page: Annotated[int | None, Query(ge=1)] = None,
+    page_size: Annotated[int | None, Query(ge=1, le=100)] = None,
+) -> list[TourResponse] | Page[TourResponse]:
+    """List all active tours with pricing, departures, categories, and gallery.
+
+    When `page`/`page_size` are provided, returns a Refine-compatible
+    `Page[TourResponse]` payload ({data: [...], total}); otherwise returns a
+    plain array (customer-facing site contract).
+    """
+    base_stmt = select(Tour).where(Tour.is_active.is_(True))
+    count_stmt = select(func.count()).select_from(Tour).where(Tour.is_active.is_(True))
+
     if boarding_point:
-        stmt = stmt.join(Tour.boarding_points).where(BoardingPoint.name == boarding_point)
+        base_stmt = base_stmt.join(Tour.boarding_points).where(BoardingPoint.name == boarding_point)
+        count_stmt = count_stmt.join(Tour.boarding_points).where(
+            BoardingPoint.name == boarding_point
+        )
     if search_date:
-        stmt = stmt.join(Tour.departures).where(TourDeparture.start_date == search_date)
+        base_stmt = base_stmt.join(Tour.departures).where(TourDeparture.start_date == search_date)
+        count_stmt = count_stmt.join(Tour.departures).where(TourDeparture.start_date == search_date)
     if category_id:
-        stmt = stmt.where(Tour.category_id == category_id)
+        base_stmt = base_stmt.where(Tour.category_id == category_id)
+        count_stmt = count_stmt.where(Tour.category_id == category_id)
+
+    if page is not None and page_size is not None:
+        total = (await session.execute(count_stmt)).scalar_one()
+        stmt = (
+            base_stmt.options(
+                selectinload(Tour.departures),
+                selectinload(Tour.boarding_points),
+                selectinload(Tour.category),
+                selectinload(Tour.images),
+            )
+            .order_by(Tour.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        result = await session.execute(stmt)
+        tours = result.scalars().all()
+        return Page[TourResponse](data=[_build_tour_response(t) for t in tours], total=total)
+
+    stmt = base_stmt.options(
+        selectinload(Tour.departures),
+        selectinload(Tour.boarding_points),
+        selectinload(Tour.category),
+        selectinload(Tour.images),
+    )
     result = await session.execute(stmt)
     tours = result.scalars().all()
 
@@ -207,12 +239,18 @@ async def list_boarding_points(session: SessionDep) -> list[BoardingPointRespons
     return [BoardingPointResponse.model_validate(p) for p in points]
 
 
-@router.get("/{slug}", response_model=TourResponse, summary="Tur Detaylarini Getir")
-async def get_tour_by_slug(slug: str, session: SessionDep) -> TourResponse:
-    """Get details for a specific tour by slug."""
+@router.get("/{tour_id}", response_model=TourResponse, summary="Tur Detaylarini Getir")
+async def get_tour_by_slug(tour_id: str, session: SessionDep) -> TourResponse:
+    """Get details for a specific tour by id or slug."""
+    is_uuid = None
+    try:
+        is_uuid = uuid.UUID(tour_id)
+    except ValueError:
+        is_uuid = None
+
     stmt = (
         select(Tour)
-        .where(Tour.slug == slug, Tour.is_active.is_(True))
+        .where(Tour.id == is_uuid if is_uuid else Tour.slug == tour_id)
         .options(
             selectinload(Tour.departures),
             selectinload(Tour.boarding_points),
@@ -225,7 +263,7 @@ async def get_tour_by_slug(slug: str, session: SessionDep) -> TourResponse:
 
     if not tour:
         for t in DEFAULT_TOURS:
-            if t["slug"] == slug:
+            if t["slug"] == tour_id:
                 return TourResponse.model_validate(t)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tur bulunamadı.")
 
