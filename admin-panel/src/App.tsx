@@ -15,6 +15,7 @@ import { TourCreate } from "./pages/tours/create";
 import { TourEdit } from "./pages/tours/edit";
 import { TourDepartureCreate } from "./pages/tour-departures/create";
 import { TourDepartureEdit } from "./pages/tour-departures/edit";
+import { TourCategoryForm } from "./pages/tour-categories/TourCategoryForm";
 import { authProvider } from "./providers/authProvider";
 import { dataProvider } from "./providers/dataProvider";
 
@@ -127,23 +128,11 @@ export default function App() {
                 />
                 <Route
                   path="/tour-categories/create"
-                  element={
-                    <JsonResourceFormPage
-                      resource="tour-categories"
-                      title="Kategori oluştur"
-                      mode="create"
-                    />
-                  }
+                  element={<TourCategoryForm mode="create" />}
                 />
                 <Route
                   path="/tour-categories/edit/:id"
-                  element={
-                    <JsonResourceFormPage
-                      resource="tour-categories"
-                      title="Kategori düzenle"
-                      mode="edit"
-                    />
-                  }
+                  element={<TourCategoryForm mode="edit" />}
                 />
                 <Route
                   path="/contents"
