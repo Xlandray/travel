@@ -402,7 +402,7 @@ export default function LandingPage() {
                 <div>
                   <div className="relative h-56 w-full overflow-hidden">
                     <Image
-                      src={tour.image_url || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80"}
+                      src={tour.image_url || tour.images?.[0]?.url || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80"}
                       alt={tour.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
