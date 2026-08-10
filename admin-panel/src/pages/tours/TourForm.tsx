@@ -145,9 +145,26 @@ export function TourForm({ mode }: TourFormProps) {
           action={`${API_URL}/upload`}
           listType="picture"
           maxCount={1}
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          headers={{ Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}` }}
+          beforeUpload={(file) => {
+            const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+            if (!allowed.includes(file.type)) {
+              message.error(`${file.name}: yalnızca JPG, PNG, WEBP veya GIF yüklenebilir.`);
+              return Upload.LIST_IGNORE;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+              message.error(`${file.name}: görsel 10MB sınırını aşıyor.`);
+              return Upload.LIST_IGNORE;
+            }
+            return true;
+          }}
           onChange={({ file }) => {
             if (file.status === "error") {
-              message.error(`${file.name} yüklenirken hata oluştu.`);
+              const detail =
+                (file.response as { detail?: string } | null)?.detail ??
+                "Sunucuya bağlanılamadı veya istek tamamlanamadı. Görselin JPG/PNG/WEBP/GIF ve ≤10MB olduğundan emin olun.";
+              message.error(`${file.name}: ${detail}`);
             }
           }}
         >
