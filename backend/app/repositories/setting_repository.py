@@ -13,6 +13,10 @@ class SettingRepository:
     async def get_by_id(self, setting_id: uuid.UUID) -> Setting | None:
         return await self._session.get(Setting, setting_id)
 
+    async def get_all(self) -> list[Setting]:
+        result = await self._session.execute(select(Setting).order_by(Setting.key))
+        return list(result.scalars())
+
     async def list(self, offset: int, limit: int) -> tuple[list[Setting], int]:
         result = await self._session.execute(
             select(Setting).order_by(Setting.key).offset(offset).limit(limit)

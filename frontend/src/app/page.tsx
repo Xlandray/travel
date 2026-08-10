@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { TourCard } from "@/components/TourCard";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface BoardingPoint {
@@ -395,62 +396,11 @@ export default function LandingPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tours.map((tour) => (
-              <div
+              <TourCard
                 key={tour.id}
-                className="card-token group rounded-2xl overflow-hidden flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative h-56 w-full overflow-hidden">
-                    <Image
-                      src={tour.image_url || tour.images?.[0]?.url || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80"}
-                      alt={tour.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-
-                    <div className="absolute top-4 left-4 flex flex-col items-start gap-2">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur-md text-teal-700 border border-teal-200 rounded-lg text-xs font-extrabold uppercase tracking-wider">
-                        {tour.days > 1
-                          ? t("tours.days_nights", { days: tour.days, nights: tour.nights })
-                          : t("tours.daily")}
-                      </span>
-                      {tour.category?.name && (
-                        <span className="px-3 py-1 bg-brand-token text-white rounded-lg text-xs font-bold uppercase tracking-wider">
-                          {tour.category.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-3">
-                    <h3 className="text-xl font-bold text-main-token group-hover:text-brand-token transition-colors">
-                      {tour.title}
-                    </h3>
-                    <p className="text-subtle-token text-sm line-clamp-3 leading-relaxed">
-                      {tour.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-6 pt-0 border-t border-slate-100 mt-4 flex items-center justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">
-                      {t("tours.starting_from")}
-                    </span>
-                    <span className="text-2xl font-black text-brand-token">
-                      {tour.price.toLocaleString("tr-TR")} ₺
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => openBookingModal(tour)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 border border-teal-200 rounded-xl text-sm font-bold transition-all"
-                  >
-                    {t("tours.inspect_details")}
-                  </button>
-                </div>
-              </div>
+                tour={tour}
+                onInspect={(t) => openBookingModal(t as Tour)}
+              />
             ))}
           </div>
         )}

@@ -22,7 +22,7 @@ type TourFormValues = {
   nights: number;
   price: number;
   category_id?: string;
-  image_url?: string | UploadFile[];
+  images?: UploadFile[];
   is_active: boolean;
 };
 
@@ -38,23 +38,28 @@ function normFile(e: UploadChangeParam<UploadFile> | UploadFile[]) {
   return e?.fileList;
 }
 
-// Form değerini Upload fileList'ine dönüştürür (edit modunda string gelebilir).
+// Form değerini Upload fileList'ine dönüştürür (edit modunda mevcut galeri dizisi gelebilir).
 function fileListFromValue(v: unknown): UploadFile[] {
   if (Array.isArray(v)) {
-    return v as UploadFile[];
-  }
-  if (typeof v === "string" && v) {
-    return [{ uid: "-1", name: "mevcut-gorsel", status: "done", url: v }];
+    return v.map((img, i) => {
+      if (img?.uid) return img as UploadFile;
+      const url = img?.url ?? img;
+      return { uid: String(i), name: `gorsel-${i + 1}`, status: "done", url: String(url) };
+    });
   }
   return [];
 }
 
-function urlFromFileList(list: UploadFile[] | undefined): string | undefined {
-  const done = (list ?? []).filter(
-    (f) => f.status === "done" || f.url,
-  );
-  const last = done.at(-1);
-  return last?.response?.url || last?.response?.path || last?.url;
+function urlFromFile(file: UploadFile): string | undefined {
+  return file?.response?.url || file?.response?.path || file?.url;
+}
+
+// Upload fileList'ini backend `images` dizisine (url + sort_order) çevirir.
+function imagesFromFileList(list: UploadFile[] | undefined): { url: string; sort_order: number }[] {
+  return (list ?? [])
+    .filter((f) => f.status === "done" || f.url || f.response)
+    .map((f, i) => ({ url: String(urlFromFile(f) ?? ""), sort_order: i }))
+    .filter((img) => img.url);
 }
 
 export function TourForm({ mode }: TourFormProps) {
@@ -72,11 +77,15 @@ export function TourForm({ mode }: TourFormProps) {
       .catch(() => setCategories([]));
   }, []);
 
-  // Submit: image_url (fileList) -> url string olarak gönderilir
+  // Submit: images (fileList) -> {image_url, images[]} olarak gönderilir.
   const onFinish = (values: TourFormValues) => {
-    const { image_url: imgList, ...rest } = values;
-    const image_url = urlFromFileList(imgList as UploadFile[] | undefined);
-    formProps.onFinish?.({ ...rest, image_url });
+    const { images, ...rest } = values;
+    const imageList = imagesFromFileList(images as UploadFile[] | undefined);
+    formProps.onFinish?.({
+      ...rest,
+      image_url: imageList[0]?.url ?? "",
+      images: imageList,
+    } as unknown as TourFormValues);
   };
 
   const content = (
@@ -134,17 +143,18 @@ export function TourForm({ mode }: TourFormProps) {
       </div>
 
       <Form.Item
-        label="Kapak Görseli"
-        name="image_url"
+        label="Tur Görselleri"
+        name="images"
         valuePropName="fileList"
         getValueFromEvent={normFile}
         getValueProps={(value) => ({ fileList: fileListFromValue(value) })}
+        tooltip="Birden fazla görsel ekleyebilirsiniz. İlk görsel kapak görseli olarak kullanılır."
       >
         <Upload.Dragger
           name="file"
           action={`${API_URL}/upload`}
           listType="picture"
-          maxCount={1}
+          multiple
           accept="image/jpeg,image/png,image/webp,image/gif"
           headers={{ Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}` }}
           beforeUpload={(file) => {
@@ -171,8 +181,8 @@ export function TourForm({ mode }: TourFormProps) {
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">Görseli buraya sürükleyin veya tıklayarak seçin</p>
-          <p className="ant-upload-hint">Yüksek çözünürlüklü JPEG, PNG veya WEBP dosyaları desteklenir.</p>
+          <p className="ant-upload-text">Görselleri buraya sürükleyin veya tıklayarak seçin</p>
+          <p className="ant-upload-hint">Yüksek çözünürlüklü JPEG, PNG veya WEBP dosyaları desteklenir. Birden fazla dosya seçilebilir.</p>
         </Upload.Dragger>
       </Form.Item>
 

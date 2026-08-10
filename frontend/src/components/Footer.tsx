@@ -1,7 +1,42 @@
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
 
+type SettingsMap = Record<string, Record<string, unknown>>;
+
+const getApiBase = () => {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
+  }
+  return "http://api:8000/api/v1";
+};
+
+const str = (value: unknown, fallback: string) =>
+  typeof value === "string" && value.trim() ? value : fallback;
+
 export default function Footer() {
+  const [settings, setSettings] = useState<SettingsMap>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${getApiBase()}/public/settings`)
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data) => {
+        if (!cancelled) setSettings(data as SettingsMap);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const telefon = str(settings["site.iletisim.telefon"]?.deger, "0 (282) 650 00 00");
+  const eposta = str(settings["site.iletisim.email"]?.deger, "destek@corlutravel.com.tr");
+  const adres = str(settings["site.iletisim.adres"]?.deger, "Salih Omurtak Cd. No:45, Çorlu / Tekirdağ");
+  const instagram = str(settings["site.sosyal.instagram"]?.url, "");
+  const whatsapp = str(settings["site.sosyal.whatsapp"]?.numara, "");
+
   return (
     <footer className="bg-white-token text-subtle-token pt-16 pb-12 border-t border-token">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,14 +85,33 @@ export default function Footer() {
           <div className="space-y-2">
             <h4 className="text-main-token font-bold text-xs tracking-wider uppercase mb-4">İletişim &amp; Acente</h4>
             <p className="text-sm text-subtle-token leading-snug">
-              📍 Salih Omurtak Cd. No:45, Çorlu / Tekirdağ
+              📍 {adres}
             </p>
             <p className="text-sm text-subtle-token pt-1">
-              ✉️ destek@corlutravel.com.tr
+              ✉️ {eposta}
             </p>
             <p className="text-sm text-brand-token font-mono font-bold pt-1">
-              📞 0 (282) 650 00 00
+              📞 {telefon}
             </p>
+            {(instagram || whatsapp) && (
+              <p className="flex gap-3 pt-1">
+                {instagram ? (
+                  <a href={instagram} target="_blank" rel="noopener noreferrer" className="text-sm text-subtle-token hover:text-brand-token transition-colors">
+                    Instagram
+                  </a>
+                ) : null}
+                {whatsapp ? (
+                  <a
+                    href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-subtle-token hover:text-brand-token transition-colors"
+                  >
+                    WhatsApp
+                  </a>
+                ) : null}
+              </p>
+            )}
           </div>
         </div>
 

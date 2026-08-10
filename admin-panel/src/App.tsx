@@ -7,7 +7,6 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import "@refinedev/antd/dist/reset.css";
 
 import { LoginPage } from "./pages/LoginPage";
-import { JsonResourceFormPage } from "./pages/JsonResourceFormPage";
 import { ResourceListPage } from "./pages/ResourceListPage";
 import { Dashboard } from "./pages/Dashboard";
 import { BookingsPage } from "./pages/bookings/BookingsPage";
@@ -17,6 +16,8 @@ import { TourDepartureCreate } from "./pages/tour-departures/create";
 import { TourDepartureEdit } from "./pages/tour-departures/edit";
 import { TourCategoryForm } from "./pages/tour-categories/TourCategoryForm";
 import { ContentForm } from "./pages/contents/ContentForm";
+import { SettingsForm } from "./pages/settings/SettingsForm";
+import { UserForm } from "./pages/users/UserForm";
 import { authProvider } from "./providers/authProvider";
 import { dataProvider } from "./providers/dataProvider";
 
@@ -153,23 +154,11 @@ export default function App() {
                 />
                 <Route
                   path="/settings/create"
-                  element={
-                    <JsonResourceFormPage
-                      resource="admin/settings"
-                      title="Ayar oluştur"
-                      mode="create"
-                    />
-                  }
+                  element={<SettingsForm mode="create" />}
                 />
                 <Route
                   path="/settings/edit/:id"
-                  element={
-                    <JsonResourceFormPage
-                      resource="admin/settings"
-                      title="Ayar düzenle"
-                      mode="edit"
-                    />
-                  }
+                  element={<SettingsForm mode="edit" />}
                 />
                 <Route
                   path="/users"
@@ -184,13 +173,7 @@ export default function App() {
                 />
                 <Route
                   path="/users/edit/:id"
-                  element={
-                    <JsonResourceFormPage
-                      resource="admin/users"
-                      title="Kullanıcı düzenle"
-                      mode="edit"
-                    />
-                  }
+                  element={<UserForm />}
                 />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>

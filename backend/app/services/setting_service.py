@@ -17,6 +17,10 @@ class SettingService:
     async def list(self, page: int, page_size: int) -> tuple[list[Setting], int]:
         return await self._settings.list((page - 1) * page_size, page_size)
 
+    async def get_public(self) -> dict[str, dict]:
+        settings = await self._settings.get_all()
+        return {setting.key: setting.value for setting in settings}
+
     async def get(self, setting_id: uuid.UUID) -> Setting:
         setting = await self._settings.get_by_id(setting_id)
         if setting is None:

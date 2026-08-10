@@ -159,9 +159,9 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
       render: (v) => String(v ?? "—"),
     },
     {
-      title: "Durum",
-      width: 90,
-      render: (_, record) => <StatusTag active={record.is_active} />,
+      title: "Açıklama",
+      dataIndex: "description",
+      render: (v) => String(v ?? "—"),
     },
   ],
 };
