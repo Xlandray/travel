@@ -32,7 +32,13 @@
     "inspect_details": "View Details →",
     "days_nights": "{days} Days {nights} Nights",
     "daily": "Day Trip",
-    "not_found": "No tours found matching your search criteria."
+    "not_found": "No tours found matching your search criteria.",
+    "back": "← Go Back",
+    "itinerary": "Itinerary",
+    "accommodation": "Accommodation",
+    "no_image": "No image available",
+    "boarding": "Boarding: {points}",
+    "night": "{night}. night"
   },
   "booking": {
     "modal_subtitle": "Tour Details & Express Booking",

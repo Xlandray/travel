@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
-from app.api.deps import SessionDep
+from app.api.deps import CurrentSuperuser, SessionDep
 from app.models.booking import Booking
 from app.models.tour import Tour, TourDeparture
 from app.schemas.pagination import Page
@@ -68,6 +68,7 @@ async def list_tour_departures(
 async def create_tour_departure(
     departure_in: TourDepartureCreate,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> TourDepartureResponse:
     """Creates a new tour departure / bus quota stock."""
     # Check if tour exists
@@ -128,6 +129,7 @@ async def update_tour_departure(
     departure_id: uuid.UUID,
     departure_in: TourDepartureUpdate,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> TourDepartureResponse:
     """Partially update a tour departure (dates, price, quota, active flag)."""
     departure = await session.get(TourDeparture, departure_id)
@@ -154,6 +156,7 @@ async def update_tour_departure(
 async def delete_tour_departure(
     departure_id: uuid.UUID,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> None:
     """Delete a tour departure if it has no bookings."""
     departure = await session.get(TourDeparture, departure_id)

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TourCard } from "@/components/TourCard";
@@ -34,6 +33,27 @@ interface TourImage {
   sort_order: number;
 }
 
+interface Hotel {
+  id: string;
+  name: string;
+  city: string;
+  star_rating?: number;
+}
+
+interface TourHotel {
+  id: string;
+  night_order: number;
+  hotel: Hotel;
+}
+
+interface RouteStop {
+  id: string;
+  day_number: number;
+  title: string;
+  description?: string;
+  boarding_points: { id: string; name: string }[];
+}
+
 interface Tour {
   id: string;
   title: string;
@@ -45,6 +65,8 @@ interface Tour {
   image_url?: string;
   category?: Category | null;
   images?: TourImage[];
+  hotels?: TourHotel[];
+  route_stops?: RouteStop[];
   departures: Departure[];
   boarding_points: BoardingPoint[];
 }
@@ -107,7 +129,6 @@ const SAMPLE_TOURS: Tour[] = [
 
 export default function LandingPage() {
   const { t } = useLanguage();
-  const router = useRouter();
   const [tours, setTours] = useState<Tour[]>(SAMPLE_TOURS);
   const [boardingPoints, setBoardingPoints] = useState<BoardingPoint[]>([
     { id: "33333333-3333-3333-3333-333333333333", name: "Çorlu Merkez" },
@@ -118,9 +139,6 @@ export default function LandingPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [activeModalTour, setActiveModalTour] = useState<Tour | null>(null);
-  const [selectedDepartureId, setSelectedDepartureId] = useState<string>("");
-  const [selectedBoardingPointId, setSelectedBoardingPointId] = useState<string>("");
 
   useEffect(() => {
     let ignore = false;
@@ -211,24 +229,6 @@ export default function LandingPage() {
     e.preventDefault();
     executeTourSearch(selectedPoint, selectedDate, selectedCategory);
   };
-
-  const openBookingModal = (tour: Tour) => {
-    setActiveModalTour(tour);
-    setSelectedDepartureId(tour.departures[0]?.id ?? "");
-    setSelectedBoardingPointId(tour.boarding_points[0]?.id ?? "");
-  };
-
-  const handleProceedToCheckout = () => {
-    if (!activeModalTour) return;
-    const params = new URLSearchParams();
-    if (selectedDepartureId) params.append("departure", selectedDepartureId);
-    if (selectedBoardingPointId) params.append("boarding_point", selectedBoardingPointId);
-    router.push(`/checkout?${params.toString()}`);
-  };
-
-  const activeDeparture =
-    activeModalTour?.departures.find((d) => d.id === selectedDepartureId) ??
-    activeModalTour?.departures[0];
 
   return (
     <div className="min-h-screen bg-canvas-token text-main-token flex flex-col font-sans selection:bg-teal-500 selection:text-slate-900">
@@ -396,96 +396,11 @@ export default function LandingPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tours.map((tour) => (
-              <TourCard
-                key={tour.id}
-                tour={tour}
-                onInspect={(t) => openBookingModal(t as Tour)}
-              />
+              <TourCard key={tour.id} tour={tour} />
             ))}
           </div>
         )}
       </section>
-
-      {/* REZERVASYON MODALI */}
-      {activeModalTour && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative">
-            <button
-              onClick={() => setActiveModalTour(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-xl font-bold"
-            >
-              ✕
-            </button>
-
-            <div>
-              <span className="text-xs font-bold text-teal-400 uppercase tracking-widest">
-                {t("booking.modal_subtitle")}
-              </span>
-              <h2 className="text-2xl font-black text-slate-900 mt-1">{activeModalTour.title}</h2>
-              <p className="text-slate-500 text-sm mt-2">{activeModalTour.description}</p>
-            </div>
-
-            {activeModalTour.departures.length === 0 ? (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm">
-                Bu tur için yakın zamanda planlanmış sefer bulunmuyor.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    {t("booking.departure_date")}
-                  </label>
-                  <select
-                    value={selectedDepartureId}
-                    onChange={(e) => setSelectedDepartureId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500"
-                  >
-                    {activeModalTour.departures.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.start_date} → {d.end_date} ·{" "}
-                        {Number(d.price).toLocaleString("tr-TR")} ₺ · {d.available_seats} koltuk
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    {t("booking.boarding_point")}
-                  </label>
-                  <select
-                    value={selectedBoardingPointId}
-                    onChange={(e) => setSelectedBoardingPointId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500"
-                  >
-                    {activeModalTour.boarding_points.map((bp) => (
-                      <option key={bp.id} value={bp.id}>
-                        {bp.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {activeDeparture && (
-                  <div className="flex items-center justify-between text-sm py-2 border-t border-slate-200">
-                    <span className="text-slate-500">{t("booking.unit_price")}</span>
-                    <span className="text-xl font-bold text-brand-token">
-                      {Number(activeDeparture.price).toLocaleString("tr-TR")} ₺
-                    </span>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleProceedToCheckout}
-                  className="btn-primary-token w-full py-3 rounded-xl shadow-lg transition-all"
-                >
-                  {t("booking.submit_button")}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* FOOTER */}
       <Footer />

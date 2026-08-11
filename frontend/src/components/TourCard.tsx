@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 
 export interface GalleryTourImage {
@@ -12,6 +13,7 @@ export interface GalleryTourImage {
 export interface GalleryTour {
   id: string;
   title: string;
+  slug?: string;
   description?: string;
   days: number;
   nights: number;
@@ -23,10 +25,9 @@ export interface GalleryTour {
 
 type TourCardProps = {
   tour: GalleryTour;
-  onInspect: (tour: GalleryTour) => void;
 };
 
-export function TourCard({ tour, onInspect }: TourCardProps) {
+export function TourCard({ tour }: TourCardProps) {
   const { t } = useLanguage();
   const photos = [tour.image_url, ...(tour.images?.map((img) => img.url) ?? [])].filter(
     (url): url is string => Boolean(url),
@@ -153,12 +154,12 @@ export function TourCard({ tour, onInspect }: TourCardProps) {
           </span>
         </div>
 
-        <button
-          onClick={() => onInspect(tour)}
+        <Link
+          href={tour.slug ? `/turlar/${tour.slug}` : "#"}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 border border-teal-200 rounded-xl text-sm font-bold transition-all"
         >
           {t("tours.inspect_details")}
-        </button>
+        </Link>
       </div>
     </div>
   );

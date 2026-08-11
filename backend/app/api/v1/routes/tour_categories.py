@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
-from app.api.deps import SessionDep
+from app.api.deps import CurrentSuperuser, SessionDep
 from app.models.tour import TourCategory
 from app.schemas.pagination import Page
 from app.schemas.tour import (
@@ -81,6 +81,7 @@ async def list_categories(
 async def create_category(
     category_in: TourCategoryCreate,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> TourCategoryResponse:
     """Create a new tour category."""
     slug = category_in.slug or _generate_slug(category_in.name)
@@ -111,6 +112,7 @@ async def update_category(
     category_id: uuid.UUID,
     category_in: TourCategoryUpdate,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> TourCategoryResponse:
     """Partially update a tour category."""
     category = await session.get(TourCategory, category_id)
@@ -139,7 +141,7 @@ async def update_category(
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Kategoriyi Sil")
-async def delete_category(category_id: uuid.UUID, session: SessionDep) -> None:
+async def delete_category(category_id: uuid.UUID, session: SessionDep, _: CurrentSuperuser) -> None:
     """Delete a tour category (tours keep existing; category_id becomes NULL)."""
     category = await session.get(TourCategory, category_id)
     if not category:

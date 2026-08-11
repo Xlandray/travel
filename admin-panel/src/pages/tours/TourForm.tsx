@@ -1,7 +1,7 @@
 import { Create, Edit, useForm } from "@refinedev/antd";
 import type { BaseRecord, HttpError } from "@refinedev/core";
-import { Form, Input, InputNumber, Select, Upload, Switch, message } from "antd";
-import { InboxOutlined } from "@ant-design/icons";
+import { Button, Divider, Form, Input, InputNumber, Select, Space, Upload, Switch, message } from "antd";
+import { DeleteOutlined, InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import type { UploadChangeParam, UploadFile } from "antd/es/upload";
 
@@ -10,6 +10,17 @@ import { axiosInstance } from "../../providers/axios";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8081/api/v1";
 
 type CategoryOption = {
+  id: string;
+  name: string;
+};
+
+type HotelOption = {
+  id: string;
+  name: string;
+  city: string;
+};
+
+type BoardingPointOption = {
   id: string;
   name: string;
 };
@@ -23,6 +34,14 @@ type TourFormValues = {
   price: number;
   category_id?: string;
   images?: UploadFile[];
+  hotels?: { hotel_id: string; night_order: number }[];
+  route_stops?: {
+    day_number: number;
+    sort_order: number;
+    title: string;
+    description?: string;
+    boarding_point_ids?: string[];
+  }[];
   is_active: boolean;
 };
 
@@ -69,22 +88,46 @@ export function TourForm({ mode }: TourFormProps) {
     TourFormValues
   >();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [hotels, setHotels] = useState<HotelOption[]>([]);
+  const [boardingPoints, setBoardingPoints] = useState<BoardingPointOption[]>([]);
 
   useEffect(() => {
     axiosInstance
       .get("tour-categories")
       .then((res) => setCategories((res.data ?? []) as CategoryOption[]))
       .catch(() => setCategories([]));
+    axiosInstance
+      .get("hotels")
+      .then((res) => setHotels((res.data ?? []) as HotelOption[]))
+      .catch(() => setHotels([]));
+    axiosInstance
+      .get("tours/boarding-points")
+      .then((res) => setBoardingPoints((res.data ?? []) as BoardingPointOption[]))
+      .catch(() => setBoardingPoints([]));
   }, []);
 
   // Submit: images (fileList) -> {image_url, images[]} olarak gönderilir.
   const onFinish = (values: TourFormValues) => {
-    const { images, ...rest } = values;
+    const { images, hotels, route_stops, ...rest } = values;
     const imageList = imagesFromFileList(images as UploadFile[] | undefined);
+    const hotelList = (hotels ?? [])
+      .filter((h) => h.hotel_id)
+      .map((h, i) => ({ hotel_id: h.hotel_id, night_order: h.night_order || i + 1 }));
+    const routeStopList = (route_stops ?? [])
+      .filter((r) => r.title)
+      .map((r, i) => ({
+        day_number: r.day_number || i + 1,
+        sort_order: r.sort_order ?? i,
+        title: r.title,
+        description: r.description ?? "",
+        boarding_point_ids: r.boarding_point_ids ?? [],
+      }));
     formProps.onFinish?.({
       ...rest,
       image_url: imageList[0]?.url ?? "",
       images: imageList,
+      hotels: hotelList,
+      route_stops: routeStopList,
     } as unknown as TourFormValues);
   };
 
@@ -184,6 +227,130 @@ export function TourForm({ mode }: TourFormProps) {
           <p className="ant-upload-text">Görselleri buraya sürükleyin veya tıklayarak seçin</p>
           <p className="ant-upload-hint">Yüksek çözünürlüklü JPEG, PNG veya WEBP dosyaları desteklenir. Birden fazla dosya seçilebilir.</p>
         </Upload.Dragger>
+      </Form.Item>
+
+      <Divider orientation="left">Oteller</Divider>
+      <Form.Item
+        label="Konaklama Otelleri"
+        tooltip="Turda kullanılacak oteller; gece sırası hangi gece hangi otel olduğunu belirtir."
+      >
+        <Form.List name="hotels">
+          {(fields, { add, remove }) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {fields.map((field) => (
+                <Space key={field.key} align="start">
+                  <Form.Item
+                    name={[field.name, "hotel_id"]}
+                    rules={[{ required: true, message: "Otel seçin." }]}
+                    style={{ marginBottom: 0, minWidth: 260 }}
+                  >
+                    <Select
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder="Otel seçin"
+                      options={hotels.map((h) => ({
+                        value: h.id,
+                        label: `${h.name} (${h.city})`,
+                      }))}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    name={[field.name, "night_order"]}
+                    style={{ marginBottom: 0 }}
+                    tooltip="1 = ilk gece"
+                  >
+                    <InputNumber min={1} placeholder="Gece" style={{ width: 100 }} />
+                  </Form.Item>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => remove(field.name)}
+                  />
+                </Space>
+              ))}
+              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ night_order: fields.length + 1 })}>
+                Otel Ekle
+              </Button>
+            </div>
+          )}
+        </Form.List>
+      </Form.Item>
+
+      <Divider orientation="left">Rota / Gün Programı</Divider>
+      <Form.Item
+        label="Günlük Program"
+        tooltip="Her gün için başlık, açıklama ve o güne ait biniş durakları."
+      >
+        <Form.List name="route_stops">
+          {(fields, { add, remove }) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {fields.map((field) => (
+                <div
+                  key={field.key}
+                  style={{
+                    border: "1px solid #d9d9d9",
+                    borderRadius: 8,
+                    padding: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <Form.Item
+                      name={[field.name, "day_number"]}
+                      style={{ marginBottom: 0 }}
+                      rules={[{ required: true, message: "Gün no girin." }]}
+                    >
+                      <InputNumber min={1} placeholder="Gün" style={{ width: 80 }} />
+                    </Form.Item>
+                    <Form.Item
+                      name={[field.name, "title"]}
+                      style={{ marginBottom: 0, flex: 1 }}
+                      rules={[{ required: true, message: "Başlık zorunludur." }]}
+                    >
+                      <Input placeholder="Gün başlığı (örn: Çorlu'dan hareket)" />
+                    </Form.Item>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => remove(field.name)}
+                    />
+                  </div>
+                  <Form.Item name={[field.name, "description"]} style={{ marginBottom: 0 }}>
+                    <Input.TextArea rows={2} placeholder="Günün detaylı anlatımı..." />
+                  </Form.Item>
+                  <Form.Item
+                    name={[field.name, "boarding_point_ids"]}
+                    style={{ marginBottom: 0 }}
+                    tooltip="Bu güne ait biniş durakları."
+                  >
+                    <Select
+                      mode="multiple"
+                      allowClear
+                      placeholder="Biniş durakları seçin"
+                      options={boardingPoints.map((bp) => ({
+                        value: bp.id,
+                        label: bp.name,
+                      }))}
+                    />
+                  </Form.Item>
+                </div>
+              ))}
+              <Button
+                type="dashed"
+                icon={<PlusOutlined />}
+                onClick={() =>
+                  add({ day_number: fields.length + 1, sort_order: fields.length, boarding_point_ids: [] })
+                }
+              >
+                Gün Ekle
+              </Button>
+            </div>
+          )}
+        </Form.List>
       </Form.Item>
 
       <Form.Item label="Aktif mi?" name="is_active" valuePropName="checked" initialValue={true}>

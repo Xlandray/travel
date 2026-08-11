@@ -6,8 +6,10 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import SessionDep
+from app.api.deps import CurrentSuperuser, SessionDep
 from app.models.booking import Booking
+from app.models.hotel import TourHotel
+from app.models.route import RouteStop
 from app.models.tour import BoardingPoint, Tour, TourCategory, TourDeparture, TourImage
 from app.schemas.pagination import Page
 from app.schemas.tour import (
@@ -132,6 +134,8 @@ async def list_tours(
                 selectinload(Tour.boarding_points),
                 selectinload(Tour.category),
                 selectinload(Tour.images),
+                selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+                selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
             )
             .order_by(Tour.created_at.desc())
             .offset((page - 1) * page_size)
@@ -146,6 +150,8 @@ async def list_tours(
         selectinload(Tour.boarding_points),
         selectinload(Tour.category),
         selectinload(Tour.images),
+        selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+        selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
     )
     result = await session.execute(stmt)
     tours = result.scalars().all()
@@ -165,7 +171,11 @@ async def list_tours(
     status_code=status.HTTP_201_CREATED,
     summary="Yeni Tur Olustur",
 )
-async def create_tour(tour_in: TourCreate, session: SessionDep) -> TourResponse:
+async def create_tour(
+    tour_in: TourCreate,
+    session: SessionDep,
+    _: CurrentSuperuser,
+) -> TourResponse:
     """Creates a new tour in database."""
     slug = tour_in.slug or generate_slug(tour_in.title)
 
@@ -180,6 +190,21 @@ async def create_tour(tour_in: TourCreate, session: SessionDep) -> TourResponse:
     images = [
         TourImage(url=img.url, sort_order=img.sort_order, is_active=True) for img in tour_in.images
     ]
+    hotels = [
+        TourHotel(hotel_id=h.hotel_id, night_order=h.night_order, is_active=True)
+        for h in tour_in.hotels
+    ]
+    route_stops = [
+        RouteStop(
+            day_number=r.day_number,
+            sort_order=r.sort_order,
+            title=r.title,
+            description=r.description,
+            is_active=True,
+            boarding_points=(await _load_boarding_points(session, r.boarding_point_ids)),
+        )
+        for r in tour_in.route_stops
+    ]
 
     new_tour = Tour(
         title=tour_in.title,
@@ -191,6 +216,8 @@ async def create_tour(tour_in: TourCreate, session: SessionDep) -> TourResponse:
         is_active=tour_in.is_active,
         category_id=tour_in.category_id,
         images=images,
+        hotels=hotels,
+        route_stops=route_stops,
     )
     session.add(new_tour)
     await session.commit()
@@ -204,6 +231,8 @@ async def create_tour(tour_in: TourCreate, session: SessionDep) -> TourResponse:
             selectinload(Tour.boarding_points),
             selectinload(Tour.category),
             selectinload(Tour.images),
+            selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+            selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
         )
     )
     result = await session.execute(stmt)
@@ -256,6 +285,8 @@ async def get_tour_by_slug(tour_id: str, session: SessionDep) -> TourResponse:
             selectinload(Tour.boarding_points),
             selectinload(Tour.category),
             selectinload(Tour.images),
+            selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+            selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
         )
     )
     result = await session.execute(stmt)
@@ -268,6 +299,15 @@ async def get_tour_by_slug(tour_id: str, session: SessionDep) -> TourResponse:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tur bulunamadı.")
 
     return _build_tour_response(tour)
+
+
+async def _load_boarding_points(session: SessionDep, ids: list[uuid.UUID]) -> list[BoardingPoint]:
+    """Load boarding points by id, silently skipping unknown ones."""
+    if not ids:
+        return []
+    stmt = select(BoardingPoint).where(BoardingPoint.id.in_(ids))
+    result = await session.execute(stmt)
+    return list(result.scalars())
 
 
 def _build_tour_response(tour: Tour) -> TourResponse:
@@ -291,6 +331,8 @@ def _build_tour_response(tour: Tour) -> TourResponse:
         category_id=tour.category_id,
         category=tour.category,
         images=[img for img in tour.images if img.is_active],
+        hotels=[h for h in tour.hotels if h.is_active],
+        route_stops=[r for r in tour.route_stops if r.is_active],
         departures=[d for d in tour.departures if d.is_active],
         boarding_points=(
             [bp for bp in tour.boarding_points if bp.is_active] or DEFAULT_BOARDING_POINTS
@@ -303,6 +345,7 @@ async def update_tour(
     tour_id: uuid.UUID,
     tour_in: TourUpdate,
     session: SessionDep,
+    _: CurrentSuperuser,
 ) -> TourResponse:
     """Partially update a tour by its id."""
     stmt = (
@@ -313,6 +356,8 @@ async def update_tour(
             selectinload(Tour.boarding_points),
             selectinload(Tour.category),
             selectinload(Tour.images),
+            selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+            selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
         )
     )
     result = await session.execute(stmt)
@@ -324,6 +369,8 @@ async def update_tour(
     slug = data.pop("slug", None)
     data.pop("price", None)  # price inheritance is derived from departures, not a Tour column
     data.pop("images", None)  # images handled via tour_in.images (nested models)
+    data.pop("hotels", None)  # hotels handled via tour_in.hotels (nested models)
+    data.pop("route_stops", None)  # route stops handled via tour_in.route_stops
     if slug and slug != tour.slug:
         existing = await session.execute(select(Tour).where(Tour.slug == slug))
         if existing.scalar_one_or_none():
@@ -343,6 +390,29 @@ async def update_tour(
             for img in tour_in.images
         ]
 
+    if tour_in.hotels is not None:
+        tour.hotels.clear()
+        await session.flush()
+        tour.hotels = [
+            TourHotel(hotel_id=h.hotel_id, night_order=h.night_order, is_active=True)
+            for h in tour_in.hotels
+        ]
+
+    if tour_in.route_stops is not None:
+        tour.route_stops.clear()
+        await session.flush()
+        tour.route_stops = [
+            RouteStop(
+                day_number=r.day_number,
+                sort_order=r.sort_order,
+                title=r.title,
+                description=r.description,
+                is_active=True,
+                boarding_points=await _load_boarding_points(session, r.boarding_point_ids),
+            )
+            for r in tour_in.route_stops
+        ]
+
     await session.commit()
     await session.refresh(tour)
 
@@ -354,6 +424,8 @@ async def update_tour(
             selectinload(Tour.boarding_points),
             selectinload(Tour.category),
             selectinload(Tour.images),
+            selectinload(Tour.hotels).selectinload(TourHotel.hotel),
+            selectinload(Tour.route_stops).selectinload(RouteStop.boarding_points),
         )
     )
     result = await session.execute(stmt)
@@ -362,7 +434,7 @@ async def update_tour(
 
 
 @router.delete("/{tour_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Turu Sil")
-async def delete_tour(tour_id: uuid.UUID, session: SessionDep) -> None:
+async def delete_tour(tour_id: uuid.UUID, session: SessionDep, _: CurrentSuperuser) -> None:
     """Delete a tour that has no active bookings on its departures."""
     stmt = (
         select(Tour)

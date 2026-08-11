@@ -10,14 +10,28 @@ from app.schemas.booking import (
 )
 from app.schemas.contact import ContactCreate, ContactResponse
 from app.schemas.content import ContentCreate, ContentRead, ContentUpdate
+from app.schemas.hotel import (
+    HotelCreate,
+    HotelRead,
+    HotelUpdate,
+    TourHotelIn,
+    TourHotelRead,
+)
 from app.schemas.pagination import Page
 from app.schemas.payment import PaymentCreate, PaymentRead, PaymentResponse
+from app.schemas.route import (
+    BoardingPointRead,
+    RouteStopIn,
+    RouteStopRead,
+    RouteStopUpdate,
+)
 from app.schemas.setting import SettingCreate, SettingRead, SettingUpdate
 from app.schemas.tour import BoardingPointResponse, TourDepartureResponse, TourResponse
 from app.schemas.user import AdminUserUpdate, UserCreate, UserRead, UserUpdate
 
 __all__ = [
     "AdminUserUpdate",
+    "BoardingPointRead",
     "BoardingPointResponse",
     "BookingBase",
     "BookingCreate",
@@ -28,16 +42,24 @@ __all__ = [
     "ContentCreate",
     "ContentRead",
     "ContentUpdate",
+    "HotelCreate",
+    "HotelRead",
+    "HotelUpdate",
     "Page",
     "PaymentCreate",
     "PaymentRead",
     "PaymentResponse",
+    "RouteStopIn",
+    "RouteStopRead",
+    "RouteStopUpdate",
     "SettingCreate",
     "SettingRead",
     "SettingUpdate",
     "Token",
     "TokenPayload",
     "TourDepartureResponse",
+    "TourHotelIn",
+    "TourHotelRead",
     "TourResponse",
     "UserCreate",
     "UserRead",

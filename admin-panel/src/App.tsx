@@ -18,6 +18,7 @@ import { TourCategoryForm } from "./pages/tour-categories/TourCategoryForm";
 import { ContentForm } from "./pages/contents/ContentForm";
 import { SettingsForm } from "./pages/settings/SettingsForm";
 import { UserForm } from "./pages/users/UserForm";
+import { HotelForm } from "./pages/hotels/HotelForm";
 import { authProvider } from "./providers/authProvider";
 import { dataProvider } from "./providers/dataProvider";
 
@@ -52,6 +53,13 @@ const resources = [
     create: "/tour-categories/create",
     edit: "/tour-categories/edit/:id",
     meta: { label: "Tur Kategorileri" },
+  },
+  {
+    name: "hotels",
+    list: "/hotels",
+    create: "/hotels/create",
+    edit: "/hotels/edit/:id",
+    meta: { label: "Oteller" },
   },
   {
     name: "admin/contents",
@@ -135,6 +143,18 @@ export default function App() {
                 <Route
                   path="/tour-categories/edit/:id"
                   element={<TourCategoryForm mode="edit" />}
+                />
+                <Route
+                  path="/hotels"
+                  element={<ResourceListPage resource="hotels" title="Oteller" />}
+                />
+                <Route
+                  path="/hotels/create"
+                  element={<HotelForm mode="create" />}
+                />
+                <Route
+                  path="/hotels/edit/:id"
+                  element={<HotelForm mode="edit" />}
                 />
                 <Route
                   path="/contents"

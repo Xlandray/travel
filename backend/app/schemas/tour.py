@@ -3,6 +3,9 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.hotel import TourHotelIn, TourHotelRead
+from app.schemas.route import RouteStopIn, RouteStopRead
+
 
 class BoardingPointResponse(BaseModel):
     id: uuid.UUID
@@ -71,6 +74,8 @@ class TourCreate(BaseModel):
     is_active: bool = True
     category_id: uuid.UUID | None = None
     images: list[TourImageIn] = []
+    hotels: list[TourHotelIn] = []
+    route_stops: list[RouteStopIn] = []
 
 
 class TourUpdate(BaseModel):
@@ -84,6 +89,8 @@ class TourUpdate(BaseModel):
     is_active: bool | None = None
     category_id: uuid.UUID | None = None
     images: list[TourImageIn] | None = None
+    hotels: list[TourHotelIn] | None = None
+    route_stops: list[RouteStopIn] | None = None
 
 
 class TourDepartureUpdate(BaseModel):
@@ -108,6 +115,8 @@ class TourResponse(BaseModel):
     category_id: uuid.UUID | None = None
     category: TourCategoryResponse | None = None
     images: list[TourImageResponse] = []
+    hotels: list[TourHotelRead] = []
+    route_stops: list[RouteStopRead] = []
     departures: list[TourDepartureResponse] = []
     boarding_points: list[BoardingPointResponse] = []
 

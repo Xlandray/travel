@@ -9,6 +9,7 @@ from app.api.v1.routes import (
     bookings,
     contact,
     contents,
+    hotels,
     payments,
     public,
     tour_categories,
@@ -27,6 +28,7 @@ api_router.include_router(admin_dashboard.router, prefix="/admin", tags=["admin"
 api_router.include_router(admin_payments.router, prefix="/admin", tags=["admin"])
 api_router.include_router(contents.router, prefix="/contents", tags=["contents"])
 api_router.include_router(contact.router, prefix="/contact", tags=["contact"])
+api_router.include_router(hotels.router, prefix="/hotels", tags=["Hotels"])
 api_router.include_router(bookings.router, prefix="/bookings", tags=["Bookings"])
 api_router.include_router(payments.router, prefix="/payments", tags=["payments"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])

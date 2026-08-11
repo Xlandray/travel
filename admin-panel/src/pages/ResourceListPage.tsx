@@ -125,6 +125,22 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
       render: (_, record) => <StatusTag active={record.is_active} />,
     },
   ],
+  "hotels": [
+    { title: "Ad", dataIndex: "name", render: (v) => <strong>{String(v)}</strong> },
+    { title: "Şehir", dataIndex: "city", width: 120, render: (v) => <Tag>{String(v)}</Tag> },
+    {
+      title: "Yıldız",
+      dataIndex: "star_rating",
+      width: 100,
+      render: (v) => (v ? `${String(v)} ★` : "—"),
+    },
+    { title: "Telefon", dataIndex: "phone", render: (v) => String(v ?? "—") },
+    {
+      title: "Durum",
+      width: 90,
+      render: (_, record) => <StatusTag active={record.is_active} />,
+    },
+  ],
   "admin/users": [
     { title: "E-posta", dataIndex: "email", render: (v) => <strong>{String(v)}</strong> },
     { title: "Ad Soyad", dataIndex: "full_name", render: (v) => String(v ?? "—") },

@@ -32,7 +32,13 @@
     "inspect_details": "Detayları İncele →",
     "days_nights": "{days} Gün {nights} Gece",
     "daily": "Günübirlik",
-    "not_found": "Aradığınız kriterlere uygun tur bulunamadı."
+    "not_found": "Aradığınız kriterlere uygun tur bulunamadı.",
+    "back": "← Geri Dön",
+    "itinerary": "Gün Programı",
+    "accommodation": "Konaklama",
+    "no_image": "Görsel bulunmuyor",
+    "boarding": "Biniş: {points}",
+    "night": "{night}. gece"
   },
   "booking": {
     "modal_subtitle": "Tur Detay & Hızlı Rezervasyon",

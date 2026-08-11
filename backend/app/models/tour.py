@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Numeric, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -7,6 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.hotel import TourHotel
+    from app.models.route import RouteStop
 
 # Tur ve Binis Noktasi arasindaki "Coka Cok" (Many-to-Many) iliski tablosu
 tour_boarding_points = Table(
@@ -90,6 +95,16 @@ class Tour(Base, TimestampMixin):
         back_populates="tour",
         cascade="all, delete-orphan",
         order_by="TourImage.sort_order",
+    )
+    hotels: Mapped[list["TourHotel"]] = relationship(
+        back_populates="tour",
+        cascade="all, delete-orphan",
+        order_by="TourHotel.night_order",
+    )
+    route_stops: Mapped[list["RouteStop"]] = relationship(
+        back_populates="tour",
+        cascade="all, delete-orphan",
+        order_by="RouteStop.day_number",
     )
 
 
