@@ -8,22 +8,27 @@ Each test gets a session wrapped in a transaction that is rolled back afterwards
 so tests never see each other's rows even though the code under test commits.
 """
 
+import datetime
 import os
 import subprocess
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
+from decimal import Decimal
 from urllib.parse import urlsplit, urlunsplit
 
 import asyncpg
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from app.api.deps import get_current_superuser, get_current_user
+from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.db.session import get_session
 from app.main import app
 from app.models import User
+from app.models.booking import Booking, BookingStatus
+from app.models.tour import BoardingPoint, Tour, TourDeparture
 
 TEST_DB_SUFFIX = "_test"
 
@@ -87,10 +92,21 @@ async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
     `join_transaction_mode="create_savepoint"` means commits inside the code
     under test land on a savepoint, so they are visible to the test but still
     disappear with the outer rollback.
+
+    `expire_on_commit=False` mirrors `AsyncSessionLocal` in `app/db/session.py`.
+    It has to: with the default (True) every commit expires the loaded objects,
+    so the next attribute read emits IO. Under an async session that raises
+    MissingGreenlet — a failure the same code never produces in production. The
+    fixture must run the app under production's session semantics, or the suite
+    reports bugs that do not exist and misses the ones that do.
     """
     async with engine.connect() as connection:
         transaction = await connection.begin()
-        db = AsyncSession(bind=connection, join_transaction_mode="create_savepoint")
+        db = AsyncSession(
+            bind=connection,
+            join_transaction_mode="create_savepoint",
+            expire_on_commit=False,
+        )
         try:
             yield db
         finally:
@@ -112,14 +128,13 @@ async def client(session: AsyncSession) -> AsyncIterator[AsyncClient]:
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-async def superuser(session: AsyncSession) -> User:
+async def _make_user(session: AsyncSession, *, is_superuser: bool, label: str) -> User:
     user = User(
-        email=f"admin-{uuid.uuid4().hex[:8]}@test.local",
+        email=f"{label}-{uuid.uuid4().hex[:8]}@test.local",
         hashed_password="not-used-tests-override-auth",
-        full_name="Test Admin",
+        full_name=f"Test {label.title()}",
         is_active=True,
-        is_superuser=True,
+        is_superuser=is_superuser,
     )
     session.add(user)
     await session.commit()
@@ -128,15 +143,124 @@ async def superuser(session: AsyncSession) -> User:
 
 
 @pytest.fixture
-async def admin_client(client: AsyncClient, superuser: User) -> AsyncIterator[AsyncClient]:
-    """A client authenticated as a superuser.
+async def superuser(session: AsyncSession) -> User:
+    return await _make_user(session, is_superuser=True, label="admin")
 
-    The auth dependencies are overridden rather than a real token minted: these
-    tests are about the hotel/slug contract, and going through the password flow
-    would couple them to the hashing configuration.
+
+@pytest.fixture
+async def customer(session: AsyncSession) -> User:
+    """An ordinary, non-privileged account."""
+    return await _make_user(session, is_superuser=False, label="customer")
+
+
+@pytest.fixture
+async def other_customer(session: AsyncSession) -> User:
+    """A second ordinary account, for ownership checks."""
+    return await _make_user(session, is_superuser=False, label="intruder")
+
+
+@pytest.fixture
+def as_user(client: AsyncClient) -> Callable[[User], AsyncClient]:
+    """Point the shared client at a given account.
+
+    Only `get_current_user` is overridden. `get_current_superuser` depends on it,
+    so the real privilege check still runs and a non-superuser really does get a
+    403 from the admin routes. Overriding both would paper over exactly the
+    authorization the admin tests are there to prove.
+
+    Minting a real token instead would couple every test to the password hashing
+    configuration; the token flow itself is not covered here (see `AGENTS.md`).
     """
-    app.dependency_overrides[get_current_user] = lambda: superuser
-    app.dependency_overrides[get_current_superuser] = lambda: superuser
-    yield client
-    app.dependency_overrides.pop(get_current_user, None)
-    app.dependency_overrides.pop(get_current_superuser, None)
+
+    def _login(user: User) -> AsyncClient:
+        app.dependency_overrides[get_current_user] = lambda: user
+        return client
+
+    return _login
+
+
+@pytest.fixture
+def admin_client(as_user: Callable[[User], AsyncClient], superuser: User) -> AsyncClient:
+    return as_user(superuser)
+
+
+@pytest.fixture
+def customer_client(as_user: Callable[[User], AsyncClient], customer: User) -> AsyncClient:
+    return as_user(customer)
+
+
+DepartureFactory = Callable[..., Awaitable[TourDeparture]]
+
+
+@pytest.fixture
+async def make_departure(session: AsyncSession) -> DepartureFactory:
+    """Build a tour with one departure whose quota and price are known."""
+
+    async def _make(
+        *,
+        quota: int = 10,
+        available_seats: int | None = None,
+        price: Decimal = Decimal("1250.75"),
+    ) -> TourDeparture:
+        tour = Tour(
+            title="Test Turu",
+            slug=f"test-turu-{uuid.uuid4().hex[:8]}",
+            description="Fixture tour.",
+            days=3,
+            nights=2,
+        )
+        session.add(tour)
+        await session.flush()
+
+        departure = TourDeparture(
+            tour_id=tour.id,
+            start_date=datetime.date(2030, 6, 1),
+            end_date=datetime.date(2030, 6, 3),
+            price=price,
+            total_quota=quota,
+            available_seats=quota if available_seats is None else available_seats,
+        )
+        session.add(departure)
+        await session.commit()
+        return departure
+
+    return _make
+
+
+@pytest.fixture
+async def boarding_point(session: AsyncSession) -> BoardingPoint:
+    point = BoardingPoint(name="Orion AVM Önü", is_active=True)
+    session.add(point)
+    await session.commit()
+    return point
+
+
+@pytest.fixture
+def assert_seats_balance(
+    session: AsyncSession,
+) -> Callable[[TourDeparture], Awaitable[None]]:
+    """The one invariant the booking and payment code exists to preserve.
+
+    Every seat is either on sale or held by a booking that is not cancelled:
+
+        available_seats + seats held by live bookings == total_quota
+
+    A breach means the bus was oversold or seats were lost, so this is asserted
+    after every state transition rather than only checking the row under test.
+    """
+
+    async def _check(departure: TourDeparture) -> None:
+        await session.refresh(departure)
+        result = await session.execute(
+            select(func.coalesce(func.sum(Booking.seat_count), 0)).where(
+                Booking.departure_id == departure.id,
+                Booking.status != BookingStatus.CANCELLED,
+            )
+        )
+        held = int(result.scalar_one())
+        assert departure.available_seats + held == departure.total_quota, (
+            f"seat ledger broken: available={departure.available_seats} + held={held} "
+            f"!= quota={departure.total_quota}"
+        )
+
+    return _check

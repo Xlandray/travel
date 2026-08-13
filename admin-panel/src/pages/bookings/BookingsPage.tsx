@@ -67,29 +67,45 @@ export function BookingsPage() {
 
   const refresh = () => load(current, pageSize, statusFilter);
 
-  const confirmBooking = async (id: string) => {
-    await axiosInstance.patch(`/admin/bookings/${id}`, { status: "confirmed" });
-    message.success("Rezervasyon onaylandı ve fiyat sabitlendi.");
-    refresh();
+  // Bu uclar koltuk sayisini ve parayi degistirdigi icin reddedilebilir: orn.
+  // iptal edilmis bir rezervasyon onaylanamaz (koltuklari satisa dondu).
+  // Reddi yutmak, yoneticiye tiklamasinin ise yaradigini dusundururdu.
+  const runAction = async (action: () => Promise<unknown>, successText: string) => {
+    try {
+      await action();
+      message.success(successText);
+    } catch (error) {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data
+        ?.detail;
+      message.error(detail ?? "İşlem tamamlanamadı.");
+    } finally {
+      refresh();
+    }
   };
 
-  const cancelBooking = async (id: string) => {
-    await axiosInstance.post(`/admin/bookings/${id}/cancel`);
-    message.success("Rezervasyon iptal edildi, koltuklar stoğa geri verildi.");
-    refresh();
-  };
+  const confirmBooking = (id: string) =>
+    runAction(
+      () => axiosInstance.patch(`/admin/bookings/${id}`, { status: "confirmed" }),
+      "Rezervasyon onaylandı ve fiyat sabitlendi.",
+    );
 
-  const refundPayment = async (paymentId: string) => {
-    await axiosInstance.post(`/admin/payments/${paymentId}/refund`);
-    message.success("Ödeme iade edildi, rezervasyon iptal edildi.");
-    refresh();
-  };
+  const cancelBooking = (id: string) =>
+    runAction(
+      () => axiosInstance.post(`/admin/bookings/${id}/cancel`),
+      "Rezervasyon iptal edildi, koltuklar stoğa geri verildi.",
+    );
 
-  const markPaymentPaid = async (paymentId: string) => {
-    await axiosInstance.post(`/admin/payments/${paymentId}/confirm`);
-    message.success("Ödeme ödendi olarak işaretlendi, rezervasyon onaylandı.");
-    refresh();
-  };
+  const refundPayment = (paymentId: string) =>
+    runAction(
+      () => axiosInstance.post(`/admin/payments/${paymentId}/refund`),
+      "Ödeme iade edildi, rezervasyon iptal edildi.",
+    );
+
+  const markPaymentPaid = (paymentId: string) =>
+    runAction(
+      () => axiosInstance.post(`/admin/payments/${paymentId}/confirm`),
+      "Ödeme ödendi olarak işaretlendi, rezervasyon onaylandı.",
+    );
 
   return (
     <List header="Rezervasyonlar">

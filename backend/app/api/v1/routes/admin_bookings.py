@@ -90,6 +90,15 @@ async def update_admin_booking_status(
             detail="Bu endpoint sadece 'confirmed' durumuna geçiş için kullanılır; iptal için cancel uç noktasını kullanın.",
         )
 
+    # Iptal edilmis bir rezervasyonun koltuklari satisa geri dondu. Onu tekrar
+    # CONFIRMED'e cekmek koltuklari yeniden ayirmaz; kalkis, koltugundan fazla
+    # onayli yolcu tasimaya baslar.
+    if booking.status == BookingStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="İptal edilmiş rezervasyon onaylanamaz; koltukları yeniden satışa açıldı.",
+        )
+
     booking.status = BookingStatus.CONFIRMED
     await session.commit()
     await session.refresh(booking)

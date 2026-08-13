@@ -1,7 +1,5 @@
-import asyncio
 import logging
 import uuid
-from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -148,33 +146,8 @@ async def cancel_booking(
     return booking
 
 
-async def schedule_booking_timeout_release(
-    booking_id: uuid.UUID | str,
-    delay_seconds: int = 900,
-) -> None:
-    """Background task function to release reserved seats after timeout (default 15 mins)."""
-    await asyncio.sleep(delay_seconds)
-    try:
-        await cancel_expired_booking(booking_id)
-    except Exception as exc:
-        logger.error(f"Error executing timeout release for booking {booking_id}: {exc}")
-
-
-async def release_all_expired_pending_bookings(timeout_minutes: int = 15) -> int:
-    """Batch release job for any pending bookings older than timeout_minutes."""
-    cutoff = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
-    released_count = 0
-
-    async with AsyncSessionLocal() as session:
-        stmt = select(Booking).where(
-            Booking.status == BookingStatus.PENDING, Booking.created_at <= cutoff
-        )
-        result = await session.execute(stmt)
-        expired_bookings = result.scalars().all()
-
-        for b in expired_bookings:
-            success = await cancel_expired_booking(b.id, db=session)
-            if success:
-                released_count += 1
-
-    return released_count
+# Kaldirildi: `schedule_booking_timeout_release` ve
+# `release_all_expired_pending_bookings`. Ikisi de suresi dolmus rezervasyonlari
+# toplama isini ucuncu kez uyguluyordu; tek gecerli uygulama lifespan'daki
+# supurucu (`core/tasks.start_booking_sweeper` -> `cleanup_service`), cunku
+# yeniden baslatmayi atlatir ve `skip_locked` ile kilitlenmeden calisir.

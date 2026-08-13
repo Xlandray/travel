@@ -92,12 +92,19 @@ async def confirm_transfer_payment(payment_id: uuid.UUID, session: SessionDep) -
             detail="Sadece bekleyen (PENDING) odemeler onaylanabilir.",
         )
 
+    # `payment_service.mock_pay` ile ayni kural: rezervasyon PENDING degilse
+    # odeme tamamlanamaz. Iptal edilmis bir rezervasyonun koltuklari satisa
+    # dondu, CONFIRMED olan ise zaten odenmis demektir.
+    if payment.booking is None or payment.booking.status != BookingStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Rezervasyon bekleyen durumda olmadığı için ödeme onaylanamadı.",
+        )
+
     payment.status = PaymentStatus.PAID
     payment.paid_at = datetime.now(UTC)
     payment.transaction_id = payment.transaction_id or "ADMIN-CONFIRM"
-
-    if payment.booking is not None:
-        payment.booking.status = BookingStatus.CONFIRMED
+    payment.booking.status = BookingStatus.CONFIRMED
 
     await session.commit()
     await session.refresh(payment)

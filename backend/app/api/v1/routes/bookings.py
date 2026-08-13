@@ -1,11 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models.booking import Booking
+from app.models.booking import Booking, BookingStatus
 from app.models.tour import TourDeparture
 from app.schemas.booking import BookingCreate, BookingResponse, booking_to_response
 from app.services import booking_service
@@ -29,13 +29,19 @@ BOOKING_JOINED_LOAD = (
 )
 async def create_tour_booking(
     booking_in: BookingCreate,
-    background_tasks: BackgroundTasks,
     current_user: CurrentUser,  # JWT Guvenlik bariyeri (Depends(get_current_user))
     db: SessionDep,  # AsyncSession veritabani oturumu (Depends(get_session))
 ) -> BookingResponse:
     """Next.js'den gelen Pydantic BookingCreate verisi dogrulanir (orn: koltuk 10'dan kucuk mu?).
 
     Dogrulanan veri ve JWT'den okunan kullanici ID'si dogrudan servise aktarilir.
+
+    Sepette kilitli kalan koltuklarin 15 dakika sonunda iadesi burada degil,
+    lifespan'daki supurucude yapilir (`core/tasks.start_booking_sweeper`). Bu
+    endpoint eskiden ayrica bir BackgroundTask ile 900 saniye uyuyup ayni isi
+    tekrar ediyordu; o gorev sunucu yeniden baslayinca kayboluyor, her
+    rezervasyon icin 15 dakika bir asyncio task'i mesgul tutuyor ve yanitin
+    tamamlanmasini bekleyen istemcileri bloke ediyordu.
     """
     new_booking = await booking_service.create_booking(
         db=db,
@@ -44,9 +50,6 @@ async def create_tour_booking(
         seat_count=booking_in.seat_count,
         boarding_point_id=booking_in.boarding_point_id,
     )
-
-    # Sepette kilitli kalan koltuklar icin 15 dakikalik zaman asimi gorevi
-    background_tasks.add_task(booking_service.schedule_booking_timeout_release, new_booking.id, 900)
 
     return BookingResponse.model_validate(new_booking)
 
@@ -106,7 +109,14 @@ async def cancel_user_booking(
     session: SessionDep,
     current_user: CurrentUser,
 ) -> BookingResponse:
-    """Cancel a booking manually and restore stock."""
+    """Cancel a booking manually and restore stock.
+
+    Only a PENDING booking can be dropped this way. A CONFIRMED one has money
+    against it, so it has to go through the admin refund route instead; the
+    service underneath cancels PENDING bookings only, and returning 200 for a
+    booking it had quietly refused to touch told the caller the opposite of what
+    had happened. Cancelling an already-cancelled booking stays a no-op 200.
+    """
     stmt = select(Booking).where(Booking.id == booking_id)
     result = await session.execute(stmt)
     booking = result.scalar_one_or_none()
@@ -115,6 +125,12 @@ async def cancel_user_booking(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rezervasyon bulunamadi.",
+        )
+
+    if booking.status == BookingStatus.CONFIRMED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Onaylanmış rezervasyon buradan iptal edilemez; iade talebi oluşturun.",
         )
 
     await booking_service.cancel_expired_booking(booking_id=booking.id, db=session)
