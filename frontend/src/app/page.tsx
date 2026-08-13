@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TourCard } from "@/components/TourCard";
 import { useLanguage } from "@/context/LanguageContext";
+import { apiFetch, apiFetchOr } from "@/lib/api";
 
 interface BoardingPoint {
   id: string;
@@ -71,13 +72,6 @@ interface Tour {
   boarding_points: BoardingPoint[];
 }
 
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
-
 export default function LandingPage() {
   const { t } = useLanguage();
   const [tours, setTours] = useState<Tour[]>([]);
@@ -95,52 +89,19 @@ export default function LandingPage() {
     let ignore = false;
 
     async function initData() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`${getApiBase()}/tours/boarding-points`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          if (!ignore && Array.isArray(data) && data.length > 0) {
-            setBoardingPoints(data);
-          }
-        }
-      } catch {
-        // Fallback
-      }
+      // Each of these has a built-in fallback the page can live with, so they
+      // fetch independently: a missing category list must not cost the visitor
+      // the tour list as well.
+      const timeout = () => ({ signal: AbortSignal.timeout(2000) });
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`${getApiBase()}/tour-categories`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          if (!ignore && Array.isArray(data) && data.length > 0) {
-            setCategories(data);
-          }
-        }
-      } catch {
-        // Fallback
-      }
+      const points = await apiFetchOr<BoardingPoint[]>([], "/tours/boarding-points", timeout());
+      if (!ignore && points.length > 0) setBoardingPoints(points);
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`${getApiBase()}/tours`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          if (!ignore && Array.isArray(data)) {
-            setTours(data);
-          }
-        }
-      } catch {
-        // Fallback
-      }
+      const cats = await apiFetchOr<Category[]>([], "/tour-categories", timeout());
+      if (!ignore && cats.length > 0) setCategories(cats);
+
+      const allTours = await apiFetchOr<Tour[]>([], "/tours", timeout());
+      if (!ignore) setTours(allTours);
     }
 
     initData();
@@ -153,28 +114,20 @@ export default function LandingPage() {
   const executeTourSearch = async (pointName = "", dateStr = "", categoryId = "") => {
     setLoading(true);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-      const params = new URLSearchParams();
-      if (pointName) params.append("boarding_point", pointName);
-      if (dateStr) params.append("search_date", dateStr);
-      if (categoryId) params.append("category_id", categoryId);
-
-      const url = `${getApiBase()}/tours?${params.toString()}`;
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        // Sıfır sonuç da bir sonuçtur: listeyi güncellemezsek kullanıcı önceki
-        // aramanın turlarını bu aramaya uymuş gibi görür.
-        if (Array.isArray(data)) {
-          setTours(data);
-        }
-      }
+      // Sıfır sonuç da bir sonuçtur: listeyi güncellemezsek kullanıcı önceki
+      // aramanın turlarını bu aramaya uymuş gibi görür.
+      setTours(
+        await apiFetch<Tour[]>("/tours", {
+          query: {
+            boarding_point: pointName,
+            search_date: dateStr,
+            category_id: categoryId,
+          },
+          signal: AbortSignal.timeout(2000),
+        }),
+      );
     } catch {
-      // Fallback
+      // Aramanın kendisi başarısızsa liste olduğu gibi kalır.
     } finally {
       setLoading(false);
     }

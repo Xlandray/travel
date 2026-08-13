@@ -5,13 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
+import { ApiError, apiFetch, apiFetchOr } from "@/lib/api";
+import type { BoardingPoint, Booking, Tour } from "@/lib/api-types";
 
-interface BoardingPoint {
-  id: string;
-  name: string;
-  description?: string;
-}
-
+/** A departure flattened with its tour's title, which the API does not return as one object. */
 interface DepartureDetails {
   id: string;
   tour_title: string;
@@ -21,13 +18,6 @@ interface DepartureDetails {
   available_seats: number;
   total_quota: number;
 }
-
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
 
 function CheckoutContent() {
   const { t } = useLanguage();
@@ -49,52 +39,31 @@ function CheckoutContent() {
     let isMounted = true;
 
     async function loadData() {
-      // Fetch Boarding Points
-      try {
-        const bpRes = await fetch(`${getApiBase()}/tours/boarding-points`);
-        if (bpRes.ok && isMounted) {
-          const bpData = await bpRes.json();
-          setBoardingPoints(bpData);
-          if (Array.isArray(bpData) && bpData.length > 0) {
-            setBoardingPointId(bpData[0].id);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          const fallbackPoints = [
-            { id: "33333333-3333-3333-3333-333333333333", name: "Çorlu Merkez (Heykel Önü)" },
-            { id: "44444444-4444-4444-4444-444444444444", name: "Orion AVM Önü Duraklar" },
-          ];
-          setBoardingPoints(fallbackPoints);
-          setBoardingPointId(fallbackPoints[0].id);
-        }
+      const points = await apiFetchOr<BoardingPoint[]>([], "/tours/boarding-points");
+      if (isMounted && points.length > 0) {
+        setBoardingPoints(points);
+        // Preselect, so a customer who never touches the selector still books
+        // with a valid boarding point rather than an empty one.
+        setBoardingPointId(points[0].id);
       }
 
-      // Fetch the actual departure and its tour from the API
-      try {
-        const toursRes = await fetch(`${getApiBase()}/tours`);
-        if (toursRes.ok && isMounted) {
-          const toursData = await toursRes.json();
-          if (Array.isArray(toursData)) {
-            for (const tour of toursData) {
-              const dep = (tour.departures || []).find((d: { id: string }) => d.id === departureId);
-              if (dep) {
-                setDeparture({
-                  id: dep.id,
-                  tour_title: tour.title,
-                  start_date: dep.start_date,
-                  end_date: dep.end_date,
-                  price: dep.price,
-                  available_seats: dep.available_seats,
-                  total_quota: dep.total_quota,
-                });
-                break;
-              }
-            }
+      const tours = await apiFetchOr<Tour[]>([], "/tours");
+      if (isMounted) {
+        for (const tour of tours) {
+          const dep = (tour.departures || []).find((d) => d.id === departureId);
+          if (dep) {
+            setDeparture({
+              id: dep.id,
+              tour_title: tour.title,
+              start_date: dep.start_date,
+              end_date: dep.end_date,
+              price: dep.price,
+              available_seats: dep.available_seats,
+              total_quota: dep.total_quota ?? dep.available_seats,
+            });
+            break;
           }
         }
-      } catch {
-        // Fallback below
       }
 
       if (isMounted) {
@@ -124,41 +93,32 @@ function CheckoutContent() {
     setSuccessMessage(null);
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-      const res = await fetch(`${getApiBase()}/bookings/`, {
+      const booking = await apiFetch<Booking>("/bookings/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+        auth: true,
+        json: {
           departure_id: departureId || departure?.id,
           seat_count: seatCount,
           boarding_point_id: boardingPointId,
-        }),
+        },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setSuccessMessage(
-          `Rezervasyonunuz başarıyla kilitlendi! ID: ${data.id.slice(0, 8)}... Durum: PENDING`,
-        );
-        setTimeout(() => {
-          router.push(`/odeme?booking=${encodeURIComponent(data.id)}`);
-        }, 1500);
-      } else if (res.status === 401) {
+      setSuccessMessage(
+        `Rezervasyonunuz başarıyla kilitlendi! ID: ${booking.id.slice(0, 8)}... Durum: PENDING`,
+      );
+      setTimeout(() => {
+        router.push(`/odeme?booking=${encodeURIComponent(booking.id)}`);
+      }, 1500);
+    } catch (error) {
+      if (error instanceof ApiError && error.isUnauthorized) {
         setErrorMessage("Rezervasyon oluşturmak için acente girişi yapmalısınız.");
         setTimeout(() => {
           const redirect = `/checkout?departure=${encodeURIComponent(departureId || "")}&boarding_point=${encodeURIComponent(boardingPointId)}`;
           router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
         }, 1500);
-      } else {
-        const err = await res.json();
-        setErrorMessage(err.detail || "Rezervasyon oluşturulamadı.");
+        return;
       }
-    } catch {
-      setErrorMessage("Sunucu bağlantı hatası oluştu.");
+      setErrorMessage(error instanceof ApiError ? error.detail : "Sunucu bağlantı hatası oluştu.");
     } finally {
       setLoading(false);
     }

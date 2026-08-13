@@ -1,5 +1,12 @@
 import { MetadataRoute } from "next";
 import { servicesData } from "@/data/servicesData";
+import { apiFetchOr } from "@/lib/api";
+
+// Without this the sitemap is rendered once, during `next build`, and
+// frozen: every article published after a deploy stays out of it until the
+// next one. An hour is short enough to matter and long enough not to hit
+// the API on every crawl.
+export const revalidate = 3600;
 
 interface ContentItem {
   slug: string;
@@ -33,17 +40,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 3. FastAPI'den Dinamik İçerikleri Çekme (Timeout korumalı)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contents`, {
-      signal: controller.signal,
+    const contents = await apiFetchOr<ContentItem[]>([], "/contents", {
+      signal: AbortSignal.timeout(2000),
     });
-    clearTimeout(timeoutId);
 
-    if (!res.ok) return [...staticRoutes, ...serviceRoutes];
-
-    const contents: ContentItem[] = await res.json();
     const dynamicRoutes = contents
       .filter((content) => content.is_published)
       .map((content) => ({

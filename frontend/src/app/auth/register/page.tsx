@@ -4,12 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+import { ApiError, apiFetch } from "@/lib/api";
+import type { User } from "@/lib/api-types";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,20 +22,7 @@ export default function RegisterPage() {
     const payload = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch(`${getApiBase()}/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        setErrorMessage(
-          (err as { detail?: string } | null)?.detail ||
-            "Kayıt oluşturulamadı. Bilgilerinizi kontrol edin.",
-        );
-        return;
-      }
+      await apiFetch<User>("/users", { method: "POST", json: payload });
 
       // API isteği başarılı olduğunda dönüşümü (conversion) Google'a bildir
       sendGAEvent("event", "generate_lead", {
@@ -48,8 +31,10 @@ export default function RegisterPage() {
       });
 
       router.push("/auth/login");
-    } catch {
-      setErrorMessage("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError ? error.detail : "Sunucuya bağlanılamadı. Lütfen tekrar deneyin.",
+      );
     } finally {
       setIsLoading(false);
     }

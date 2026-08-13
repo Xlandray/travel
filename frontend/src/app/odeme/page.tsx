@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
+import { ApiError, apiFetch, getToken } from "@/lib/api";
+import type { Payment } from "@/lib/api-types";
 
 interface BookingForPayment {
   id: string;
@@ -18,21 +20,6 @@ interface BookingForPayment {
   boarding_point_name?: string | null;
 }
 
-interface PaymentRecord {
-  id: string;
-  amount: number;
-  method: "card" | "transfer";
-  status: "pending" | "paid" | "failed" | "refunded";
-  transaction_id?: string | null;
-}
-
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
-
 function PaymentContent() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -40,7 +27,7 @@ function PaymentContent() {
   const bookingId = searchParams.get("booking");
 
   const [booking, setBooking] = useState<BookingForPayment | null>(null);
-  const [payment, setPayment] = useState<PaymentRecord | null>(null);
+  const [payment, setPayment] = useState<Payment | null>(null);
   const [cardHolder, setCardHolder] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -49,8 +36,6 @@ function PaymentContent() {
   const [paying, setPaying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const getToken = () => (typeof window !== "undefined" ? localStorage.getItem("token") : null);
 
   const redirectToLogin = useCallback(() => {
     const redirect = bookingId
@@ -76,22 +61,20 @@ function PaymentContent() {
 
       setLoading(true);
       try {
-        const res = await fetch(`${getApiBase()}/bookings/${bookingId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          if (typeof window !== "undefined") localStorage.removeItem("token");
+        const data = await apiFetch<BookingForPayment>(`/bookings/${bookingId}`, { auth: true });
+        if (isMounted) setBooking(data);
+      } catch (error) {
+        if (error instanceof ApiError && error.isUnauthorized) {
           redirectToLogin();
           return;
         }
-        if (!res.ok) {
-          if (isMounted) setErrorMessage("Rezervasyon bilgileri yüklenemedi.");
-          return;
+        if (isMounted) {
+          setErrorMessage(
+            error instanceof ApiError
+              ? error.detail
+              : "Sunucuya bağlanılamadı. Lütfen tekrar deneyin.",
+          );
         }
-        const data = await res.json();
-        if (isMounted) setBooking(data);
-      } catch {
-        if (isMounted) setErrorMessage("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -118,50 +101,22 @@ function PaymentContent() {
     setSuccessMessage(null);
     try {
       // 1) Ödemeyi başlat (tutar sunucuda rezervasyondan sabitlenir)
-      const createRes = await fetch(`${getApiBase()}/payments/`, {
+      const createdPayment = await apiFetch<Payment>("/payments/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ booking_id: booking.id, method: "card" }),
+        auth: true,
+        json: { booking_id: booking.id, method: "card" },
       });
-      if (createRes.status === 401) {
-        if (typeof window !== "undefined") localStorage.removeItem("token");
-        redirectToLogin();
-        return;
-      }
-      if (!createRes.ok) {
-        const err = await createRes.json().catch(() => ({}));
-        setErrorMessage(err.detail || "Ödeme başlatılamadı.");
-        return;
-      }
-      const createdPayment: PaymentRecord = await createRes.json();
       setPayment(createdPayment);
 
       // 2) Mock kartla öde (rezervasyon CONFIRMED'e geçer)
-      const payRes = await fetch(`${getApiBase()}/payments/${createdPayment.id}/pay`, {
+      const paidPayment = await apiFetch<Payment>(`/payments/${createdPayment.id}/pay`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        auth: true,
+        json: {
           card_holder: cardHolder,
           card_number: cardNumber.replace(/\s/g, ""),
-        }),
+        },
       });
-      if (payRes.status === 401) {
-        if (typeof window !== "undefined") localStorage.removeItem("token");
-        redirectToLogin();
-        return;
-      }
-      if (!payRes.ok) {
-        const err = await payRes.json().catch(() => ({}));
-        setErrorMessage(err.detail || "Ödeme tamamlanamadı.");
-        return;
-      }
-      const paidPayment: PaymentRecord = await payRes.json();
       setPayment(paidPayment);
       setBooking((prev) => (prev ? { ...prev, status: "confirmed" } : prev));
       setSuccessMessage(
@@ -170,8 +125,14 @@ function PaymentContent() {
       setTimeout(() => {
         router.push("/profil/rezervasyonlarim");
       }, 2500);
-    } catch {
-      setErrorMessage("Ödeme işlemi sırasında bir hata oluştu.");
+    } catch (error) {
+      if (error instanceof ApiError && error.isUnauthorized) {
+        redirectToLogin();
+        return;
+      }
+      setErrorMessage(
+        error instanceof ApiError ? error.detail : "Ödeme işlemi sırasında bir hata oluştu.",
+      );
     } finally {
       setPaying(false);
     }

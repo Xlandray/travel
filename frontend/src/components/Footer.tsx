@@ -3,14 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
 
-type SettingsMap = Record<string, Record<string, unknown>>;
+import { apiFetchOr } from "@/lib/api";
 
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+type SettingsMap = Record<string, Record<string, unknown>>;
 
 const str = (value: unknown, fallback: string) =>
   typeof value === "string" && value.trim() ? value : fallback;
@@ -20,12 +15,11 @@ export default function Footer() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${getApiBase()}/public/settings`)
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data) => {
-        if (!cancelled) setSettings(data as SettingsMap);
-      })
-      .catch(() => {});
+    // A footer with the built-in contact details is better than no footer,
+    // so a failure here falls back rather than surfacing.
+    apiFetchOr<SettingsMap>({}, "/public/settings").then((data) => {
+      if (!cancelled) setSettings(data);
+    });
     return () => {
       cancelled = true;
     };

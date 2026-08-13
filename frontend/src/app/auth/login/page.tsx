@@ -4,12 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+import { ApiError, apiFetch, setToken } from "@/lib/api";
+import type { AuthToken } from "@/lib/api-types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,44 +22,25 @@ export default function LoginPage() {
     const password = formData.get("password") as string;
 
     try {
-      // 1. First try JSON endpoint
-      let res = await fetch(`${getApiBase()}/auth/login`, {
+      const token = await apiFetch<AuthToken>("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        json: { email, password },
       });
 
-      // 2. If 404 or 405, fallback to /token form endpoint
-      if (res.status === 404 || res.status === 405) {
-        const body = new URLSearchParams();
-        body.append("username", email);
-        body.append("password", password);
-        res = await fetch(`${getApiBase()}/auth/token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: body.toString(),
-        });
+      setToken(token.access_token);
+      // The admin panel reads a different key from the same origin in dev.
+      if (typeof window !== "undefined") {
+        localStorage.setItem("access_token", token.access_token);
       }
 
-      if (res.ok) {
-        const data = await res.json();
-        if (typeof window !== "undefined") {
-          localStorage.setItem("token", data.access_token);
-          localStorage.setItem("access_token", data.access_token);
-        }
-        const redirect =
-          typeof window !== "undefined"
-            ? new URLSearchParams(window.location.search).get("redirect")
-            : null;
-        router.push(redirect || "/");
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setErrorMessage(
-          errData.detail || "Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.",
-        );
-      }
-    } catch {
-      setErrorMessage("Sunucuya bağlanılamadı. Lütfen ağ bağlantınızı kontrol edin.");
+      const redirect = new URLSearchParams(window.location.search).get("redirect");
+      router.push(redirect || "/");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.detail
+          : "Sunucuya bağlanılamadı. Lütfen ağ bağlantınızı kontrol edin.",
+      );
     } finally {
       setIsLoading(false);
     }

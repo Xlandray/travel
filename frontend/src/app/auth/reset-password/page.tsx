@@ -4,12 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+import { ApiError, apiFetch } from "@/lib/api";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -41,22 +36,17 @@ function ResetPasswordContent() {
     }
 
     try {
-      const res = await fetch(`${getApiBase()}/auth/reset-password`, {
+      await apiFetch("/auth/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, new_password }),
+        json: { token, new_password },
       });
-
-      if (res.ok) {
-        setIsSubmitted(true);
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setErrorMessage(
-          errData.detail || "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
-        );
-      }
-    } catch {
-      setErrorMessage("Sunucuya bağlanılamadı. Lütfen ağ bağlantınızı kontrol edin.");
+      setIsSubmitted(true);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.detail
+          : "Sunucuya bağlanılamadı. Lütfen ağ bağlantınızı kontrol edin.",
+      );
     } finally {
       setIsLoading(false);
     }

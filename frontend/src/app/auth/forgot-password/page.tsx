@@ -2,6 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { apiFetchOr } from "@/lib/api";
+
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -13,11 +15,10 @@ export default function ForgotPasswordPage() {
     const email = formData.get("email") as string;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      // The endpoint answers the same way whether or not the address is
+      // registered, and so does this page — a failure here must not become a
+      // way to find out which addresses exist.
+      await apiFetchOr(null, "/auth/forgot-password", { method: "POST", json: { email } });
       setIsSubmitted(true);
     } finally {
       setIsLoading(false);

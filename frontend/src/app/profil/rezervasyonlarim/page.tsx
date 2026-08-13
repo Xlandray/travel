@@ -6,29 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
-
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
-
-interface MyBooking {
-  id: string;
-  departure_id: string;
-  boarding_point_id: string | null;
-  seat_count: number;
-  total_price: number;
-  status: "pending" | "confirmed" | "cancelled";
-  created_at: string;
-  tour_title?: string | null;
-  start_date?: string | null;
-  end_date?: string | null;
-  boarding_point_name?: string | null;
-  payment_id?: string | null;
-  payment_status?: "pending" | "paid" | "failed" | "refunded" | null;
-}
+import { ApiError, apiFetch, clearToken, getToken } from "@/lib/api";
+import type { Booking as MyBooking } from "@/lib/api-types";
 
 const STATUS_TEXT: Record<MyBooking["status"], string> = {
   pending: "Beklemede",
@@ -68,8 +47,6 @@ function MyBookingsContent() {
   const [signingOut, setSigningOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const getToken = () => (typeof window !== "undefined" ? localStorage.getItem("token") : null);
-
   const redirectToLogin = useCallback(() => {
     const redirect = redirectAfterLogin || "/profil/rezervasyonlarim";
     router.replace(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
@@ -88,22 +65,20 @@ function MyBookingsContent() {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const res = await fetch(`${getApiBase()}/bookings/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          if (typeof window !== "undefined") localStorage.removeItem("token");
+        const data = await apiFetch<MyBooking[]>("/bookings/me", { auth: true });
+        if (isMounted) setBookings(data);
+      } catch (error) {
+        if (error instanceof ApiError && error.isUnauthorized) {
           redirectToLogin();
           return;
         }
-        if (!res.ok) {
-          if (isMounted) setErrorMessage("Rezervasyonlarınız yüklenirken bir hata oluştu.");
-          return;
+        if (isMounted) {
+          setErrorMessage(
+            error instanceof ApiError
+              ? error.detail
+              : "Sunucuya bağlanılamadı. Lütfen tekrar deneyin.",
+          );
         }
-        const data = await res.json();
-        if (isMounted) setBookings(Array.isArray(data) ? data : []);
-      } catch {
-        if (isMounted) setErrorMessage("Sunucuya bağlanılamadı. Lütfen tekrar deneyin.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -126,24 +101,21 @@ function MyBookingsContent() {
     setCancellingId(id);
     setErrorMessage(null);
     try {
-      const res = await fetch(`${getApiBase()}/bookings/${id}/cancel`, {
+      const updated = await apiFetch<MyBooking>(`/bookings/${id}/cancel`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        auth: true,
       });
-      if (res.status === 401) {
-        if (typeof window !== "undefined") localStorage.removeItem("token");
+      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+    } catch (error) {
+      if (error instanceof ApiError && error.isUnauthorized) {
         redirectToLogin();
         return;
       }
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setErrorMessage(err.detail || "Rezervasyon iptal edilemedi. Lütfen tekrar deneyin.");
-        return;
-      }
-      const updated = await res.json();
-      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
-    } catch {
-      setErrorMessage("Sunucuya bağlanılamadı. İptal işlemi tamamlanamadı.");
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.detail
+          : "Sunucuya bağlanılamadı. İptal işlemi tamamlanamadı.",
+      );
     } finally {
       setCancellingId(null);
     }
@@ -159,23 +131,24 @@ function MyBookingsContent() {
     setSigningOut(true);
     setErrorMessage(null);
     try {
-      const res = await fetch(`${getApiBase()}/auth/logout-all`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiFetch("/auth/logout-all", { method: "POST", auth: true });
+    } catch (error) {
       // 401 means the sessions were already gone, which is the outcome asked
-      // for — either way this device's token is no longer worth keeping.
-      if (!res.ok && res.status !== 401) {
-        setErrorMessage("Oturumlar kapatılamadı. Lütfen tekrar deneyin.");
+      // for. Anything else and the sessions may still be open, so say so.
+      if (!(error instanceof ApiError && error.isUnauthorized)) {
+        setErrorMessage(
+          error instanceof ApiError
+            ? error.detail
+            : "Sunucuya bağlanılamadı. Oturumlar kapatılamadı.",
+        );
         return;
       }
-      if (typeof window !== "undefined") localStorage.removeItem("token");
-      redirectToLogin();
-    } catch {
-      setErrorMessage("Sunucuya bağlanılamadı. Oturumlar kapatılamadı.");
     } finally {
       setSigningOut(false);
     }
+
+    clearToken();
+    redirectToLogin();
   };
 
   const formatDate = (value?: string | null) => {

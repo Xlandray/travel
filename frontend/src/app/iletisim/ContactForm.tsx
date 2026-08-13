@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 
+import { ApiError, apiFetch } from "@/lib/api";
+
 export default function ContactForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{ success: boolean; message: string } | null>(null);
@@ -14,28 +16,21 @@ export default function ContactForm() {
     const payload = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      await apiFetch("/contact", { method: "POST", json: payload });
+      setStatus({
+        success: true,
+        message:
+          "Teklif talebiniz başarıyla alındı! Ekibimiz kısa sürede sizinle iletişime geçecektir.",
       });
-
-      if (res.ok) {
-        setStatus({
-          success: true,
-          message:
-            "Teklif talebiniz başarıyla alındı! Ekibimiz kısa sürede sizinle iletişime geçecektir.",
-        });
-        (e.target as HTMLFormElement).reset();
-      } else {
-        const data = await res.json().catch(() => null);
-        setStatus({
-          success: false,
-          message: data?.detail || "Mesaj gönderilirken bir hata oluştu.",
-        });
-      }
-    } catch {
-      setStatus({ success: false, message: "Sunucuya bağlanılamadı. Lütfen tekrar deneyin." });
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      setStatus({
+        success: false,
+        message:
+          error instanceof ApiError
+            ? error.detail
+            : "Sunucuya bağlanılamadı. Lütfen tekrar deneyin.",
+      });
     } finally {
       setIsLoading(false);
     }

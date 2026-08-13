@@ -4,33 +4,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-interface Content {
-  id: string;
-  title: string;
-  slug: string;
-  body: string;
-  is_published: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+import { apiFetchOr } from "@/lib/api";
+import type { Content } from "@/lib/api-types";
 
 async function getContentBySlug(slug: string): Promise<Content | null> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contents`, {
-      next: { revalidate: 60 },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) return null;
-    const contents: Content[] = await res.json();
-    return contents.find((c) => c.slug === slug && c.is_published) || null;
-  } catch {
-    return null;
-  }
+  // No cache, like the tour and hotel detail pages. A 60-second cache here
+  // meant a just-published article answered 404 at its own URL for a minute —
+  // long enough for whoever published it to conclude it had not worked.
+  const contents = await apiFetchOr<Content[]>([], "/contents", {
+    cache: "no-store",
+    signal: AbortSignal.timeout(2000),
+  });
+  return contents.find((c) => c.slug === slug && c.is_published) || null;
 }
 
 export async function generateMetadata({

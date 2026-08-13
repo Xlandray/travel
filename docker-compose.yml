@@ -68,7 +68,14 @@ services:
     ports:
       - "${WEB_PORT:-3010}:3000"
     environment:
+      # What the browser should call: the API as published on the host.
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8081}/api/v1
+      # What server-rendered pages should call. `localhost:8081` from inside
+      # this container is this container, so using the public URL there meant
+      # every SSR fetch was refused: published articles 404'd and the sitemap
+      # dropped them. On Vercel there is no such network and `src/lib/api.ts`
+      # falls back to the public URL instead.
+      INTERNAL_API_URL: http://api:8000/api/v1
     depends_on:
       api:
         condition: service_started

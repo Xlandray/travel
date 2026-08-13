@@ -36,6 +36,32 @@ export async function registerAndLogIn(page: Page): Promise<Customer> {
   return customer;
 }
 
+export interface SeededContent {
+  title: string;
+  slug: string;
+  body: string;
+}
+
+/** Publish an article, so a test can check the server actually renders one. */
+export async function seedPublishedContent(api: APIRequestContext): Promise<SeededContent> {
+  const token = await adminToken(api);
+  const suffix = Math.random().toString(36).slice(2, 10);
+  const content = {
+    title: `E2E Yazısı ${suffix}`,
+    slug: `e2e-yazisi-${suffix}`,
+    body: `Playwright tarafından yayımlandı (${suffix}).`,
+  };
+
+  const response = await api.post(`${API_BASE}/admin/contents`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { ...content, is_published: true },
+  });
+  if (!response.ok()) {
+    throw new Error(`Could not seed content (${response.status()}): ${await response.text()}`);
+  }
+  return content;
+}
+
 export interface SeededDeparture {
   tourTitle: string;
   tourSlug: string;

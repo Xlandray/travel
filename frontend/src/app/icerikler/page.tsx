@@ -3,6 +3,9 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import type { Metadata } from "next";
 
+import { apiFetchOr } from "@/lib/api";
+import type { Content } from "@/lib/api-types";
+
 export const metadata: Metadata = {
   title: "Haberler & Projeler",
   description:
@@ -17,32 +20,12 @@ export const metadata: Metadata = {
   },
 };
 
-interface Content {
-  id: string;
-  title: string;
-  slug: string;
-  body: string;
-  is_published: boolean;
-  created_at?: string;
-}
-
 async function getPublishedContents(): Promise<Content[]> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contents`, {
-      next: { revalidate: 60 },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) return [];
-    const contents: Content[] = await res.json();
-    return contents.filter((c) => c.is_published);
-  } catch {
-    return [];
-  }
+  const contents = await apiFetchOr<Content[]>([], "/contents", {
+    next: { revalidate: 60 },
+    signal: AbortSignal.timeout(3000),
+  });
+  return contents.filter((c) => c.is_published);
 }
 
 export default async function ContentsListingPage() {

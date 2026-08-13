@@ -5,13 +5,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TourBookingPanel } from "@/components/TourBookingPanel";
-
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+import { apiFetchOr } from "@/lib/api";
 
 interface Hotel {
   id: string;
@@ -58,13 +52,7 @@ interface TourDetail {
 }
 
 async function fetchTour(slug: string): Promise<TourDetail | null> {
-  try {
-    const res = await fetch(`${getApiBase()}/tours/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return (await res.json()) as TourDetail;
-  } catch {
-    return null;
-  }
+  return apiFetchOr<TourDetail | null>(null, `/tours/${slug}`, { cache: "no-store" });
 }
 
 export async function generateMetadata({

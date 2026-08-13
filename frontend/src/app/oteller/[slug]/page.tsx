@@ -5,13 +5,7 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TourCard, type GalleryTour } from "@/components/TourCard";
-
-const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api/v1";
-  }
-  return "http://api:8000/api/v1";
-};
+import { apiFetchOr } from "@/lib/api";
 
 interface HotelDetail {
   id: string;
@@ -29,23 +23,11 @@ const FALLBACK_HOTEL_IMAGE =
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80";
 
 async function fetchHotel(slug: string): Promise<HotelDetail | null> {
-  try {
-    const res = await fetch(`${getApiBase()}/hotels/${slug}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return (await res.json()) as HotelDetail;
-  } catch {
-    return null;
-  }
+  return apiFetchOr<HotelDetail | null>(null, `/hotels/${slug}`, { cache: "no-store" });
 }
 
 async function fetchHotelTours(slug: string): Promise<GalleryTour[]> {
-  try {
-    const res = await fetch(`${getApiBase()}/hotels/${slug}/tours`, { cache: "no-store" });
-    if (!res.ok) return [];
-    return (await res.json()) as GalleryTour[];
-  } catch {
-    return [];
-  }
+  return apiFetchOr<GalleryTour[]>([], `/hotels/${slug}/tours`, { cache: "no-store" });
 }
 
 export async function generateMetadata({
