@@ -78,62 +78,9 @@ const getApiBase = () => {
   return "http://api:8000/api/v1";
 };
 
-const SAMPLE_TOURS: Tour[] = [
-  {
-    id: "11111111-1111-1111-1111-111111111111",
-    title: "Kapadokya Turu",
-    slug: "kapadokya-turu",
-    description:
-      "Sıcak hava balonları, peribacaları ve yeraltı şehirleriyle dolu unutulmaz bir deneyim.",
-    days: 3,
-    nights: 2,
-    price: 6500,
-    image_url:
-      "https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=800&q=80",
-    departures: [
-      {
-        id: "55555555-5555-5555-5555-555555555555",
-        start_date: "2026-09-01",
-        end_date: "2026-09-03",
-        price: 6500,
-        available_seats: 25,
-      },
-    ],
-    boarding_points: [
-      { id: "33333333-3333-3333-3333-333333333333", name: "Çorlu Merkez" },
-      { id: "44444444-4444-4444-4444-444444444444", name: "Orion AVM Önü" },
-    ],
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222222",
-    title: "Salda Gölü ve Pamukkale",
-    slug: "salda-golu-ve-pamukkale",
-    description:
-      "Türkiye'nin Maldivleri Salda Gölü'nün turkuaz sularında ve bembeyaz travertenlerde harika bir gün.",
-    days: 1,
-    nights: 0,
-    price: 2100,
-    image_url:
-      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
-    departures: [
-      {
-        id: "66666666-6666-6666-6666-666666666666",
-        start_date: "2026-08-25",
-        end_date: "2026-08-25",
-        price: 2100,
-        available_seats: 18,
-      },
-    ],
-    boarding_points: [
-      { id: "33333333-3333-3333-3333-333333333333", name: "Çorlu Merkez" },
-      { id: "44444444-4444-4444-4444-444444444444", name: "Orion AVM Önü" },
-    ],
-  },
-];
-
 export default function LandingPage() {
   const { t } = useLanguage();
-  const [tours, setTours] = useState<Tour[]>(SAMPLE_TOURS);
+  const [tours, setTours] = useState<Tour[]>([]);
   const [boardingPoints, setBoardingPoints] = useState<BoardingPoint[]>([
     { id: "33333333-3333-3333-3333-333333333333", name: "Çorlu Merkez" },
     { id: "44444444-4444-4444-4444-444444444444", name: "Orion AVM Önü" },
@@ -187,7 +134,7 @@ export default function LandingPage() {
         clearTimeout(timeoutId);
         if (res.ok) {
           const data = await res.json();
-          if (!ignore && Array.isArray(data) && data.length > 0) {
+          if (!ignore && Array.isArray(data)) {
             setTours(data);
           }
         }
@@ -220,7 +167,9 @@ export default function LandingPage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        // Sıfır sonuç da bir sonuçtur: listeyi güncellemezsek kullanıcı önceki
+        // aramanın turlarını bu aramaya uymuş gibi görür.
+        if (Array.isArray(data)) {
           setTours(data);
         }
       }

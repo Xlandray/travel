@@ -3,6 +3,7 @@
 import uuid
 from typing import Any
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -99,19 +100,20 @@ class TestVisibility:
         response = await client.get("/tours", params={"include_inactive": True})
         assert response.status_code in (401, 403)
 
-    async def test_an_empty_catalogue_serves_placeholder_tours(self, client: AsyncClient) -> None:
-        """Pins existing behaviour rather than endorsing it.
+    async def test_an_empty_catalogue_returns_nothing(self, client: AsyncClient) -> None:
+        """No tours means no tours.
 
-        With no active tours the unpaginated list returns `DEFAULT_TOURS`, a
-        hard-coded demo catalogue, so a fresh or fully unpublished database shows
-        customers trips that do not exist. Pinned here so it cannot change or be
-        removed by accident — see the note in AGENTS.md.
+        The list used to fall back to a hard-coded demo catalogue, so a fresh or
+        fully unpublished database advertised trips that did not exist.
         """
         response = await client.get("/tours")
         assert response.status_code == 200
-        body = response.json()
-        assert body, "empty catalogue returned nothing; the placeholder behaviour changed"
-        assert all(t["id"] for t in body)
+        assert response.json() == []
+
+    @pytest.mark.parametrize("slug", ["kapadokya-turu", "salda-golu-ve-pamukkale"])
+    async def test_the_old_placeholder_slugs_are_gone(self, client: AsyncClient, slug: str) -> None:
+        """These two resolved to invented tours no matter what the database held."""
+        assert (await client.get(f"/tours/{slug}")).status_code == 404
 
 
 class TestUpdateAndDelete:

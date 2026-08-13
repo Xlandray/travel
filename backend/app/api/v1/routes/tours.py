@@ -1,6 +1,6 @@
 import uuid
 from datetime import date as date_type
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -26,59 +26,6 @@ from app.schemas.tour import (
 )
 
 router = APIRouter()
-
-# Default fallback tour data if database is initial
-DEFAULT_TOURS: list[dict[str, Any]] = [
-    {
-        "id": uuid.UUID("11111111-1111-1111-1111-111111111111"),
-        "title": "Kapadokya Turu",
-        "slug": "kapadokya-turu",
-        "description": "Sicak hava balonlari, peribacalari ve yeralti sehirleriyle dolu unutulmaz bir deneyim.",
-        "days": 3,
-        "nights": 2,
-        "is_active": True,
-        "price": 6500.0,
-        "image_url": "https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=800&q=80",
-        "departures": [],
-        "boarding_points": [
-            {
-                "id": uuid.UUID("33333333-3333-3333-3333-333333333333"),
-                "name": "Çorlu Merkez",
-                "description": "Heykel önü kalkış",
-            },
-            {
-                "id": uuid.UUID("44444444-4444-4444-4444-444444444444"),
-                "name": "Orion AVM Önü",
-                "description": "Durak karşısı",
-            },
-        ],
-    },
-    {
-        "id": uuid.UUID("22222222-2222-2222-2222-222222222222"),
-        "title": "Salda Gölü ve Pamukkale",
-        "slug": "salda-golu-ve-pamukkale",
-        "description": "Türkiye'nin Maldivleri Salda Gölü'nün turkuaz sularinda ve bembeyaz travertenlerde harika bir gün.",
-        "days": 1,
-        "nights": 0,
-        "is_active": True,
-        "price": 2100.0,
-        "image_url": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
-        "departures": [],
-        "boarding_points": [
-            {
-                "id": uuid.UUID("33333333-3333-3333-3333-333333333333"),
-                "name": "Çorlu Merkez",
-                "description": "Heykel önü kalkış",
-            },
-            {
-                "id": uuid.UUID("44444444-4444-4444-4444-444444444444"),
-                "name": "Orion AVM Önü",
-                "description": "Durak karşısı",
-            },
-        ],
-    },
-]
-
 
 DEFAULT_BOARDING_POINTS: list[BoardingPointResponse] = [
     BoardingPointResponse(
@@ -171,10 +118,6 @@ async def list_tours(
     )
     result = await session.execute(stmt)
     tours = result.scalars().all()
-
-    if not tours:
-        return [TourResponse.model_validate(t, from_attributes=False) for t in DEFAULT_TOURS]
-
     return [build_tour_response(t) for t in tours]
 
 
@@ -314,9 +257,6 @@ async def get_tour_by_slug(tour_id: str, session: SessionDep) -> TourResponse:
     tour = result.scalar_one_or_none()
 
     if not tour:
-        for t in DEFAULT_TOURS:
-            if t["slug"] == tour_id:
-                return TourResponse.model_validate(t)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tur bulunamadı.")
 
     return build_tour_response(tour)
