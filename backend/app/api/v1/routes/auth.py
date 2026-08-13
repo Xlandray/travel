@@ -8,7 +8,13 @@ from pydantic import EmailStr, Field
 
 from app.api.deps import SessionDep
 from app.core.email import send_email
-from app.core.security import create_access_token, decode_access_token, hash_password
+from app.core.security import (
+    create_access_token,
+    create_password_reset_token,
+    decode_password_reset_token,
+    hash_password,
+    password_reset_fingerprint,
+)
 from app.domain.exceptions import InvalidCredentialsError
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.base import Schema
@@ -71,7 +77,7 @@ async def request_password_reset(
     try:
         user = await UserService(session).get_by_email(request_in.email)
         if user:
-            reset_token = create_access_token(str(user.id))
+            reset_token = create_password_reset_token(str(user.id), user.hashed_password)
             reset_url = f"https://armonitex.com.tr/auth/reset-password?token={reset_token}"
             subject = "Armonitex Şifre Sıfırlama Talebi"
             body = (
@@ -94,22 +100,30 @@ async def reset_password(
     payload: ResetPasswordRequest,
     session: SessionDep,
 ) -> dict[str, str]:
-    """Reset a user's password using the token emailed by forgot-password."""
+    """Reset a user's password using the token emailed by forgot-password.
+
+    Only a `password_reset` token is accepted, and only while it still matches
+    the account's current password hash — so a session token cannot change a
+    password, and a link that has already been used is dead.
+    """
+    invalid_link = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Geçersiz veya süresi dolmuş sıfırlama bağlantısı.",
+    )
+
     try:
-        subject = decode_access_token(payload.token)
+        subject, fingerprint = decode_password_reset_token(payload.token)
         user_id = uuid.UUID(subject)
-        try:
-            user = await UserService(session).get_active_user(user_id)
-        except InvalidCredentialsError as error:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Geçersiz veya süresi dolmuş sıfırlama bağlantısı.",
-            ) from error
-    except (jwt.InvalidTokenError, jwt.ExpiredSignatureError, ValueError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Geçersiz veya süresi dolmuş sıfırlama bağlantısı.",
-        ) from error
+    except (jwt.InvalidTokenError, ValueError) as error:
+        raise invalid_link from error
+
+    try:
+        user = await UserService(session).get_active_user(user_id)
+    except InvalidCredentialsError as error:
+        raise invalid_link from error
+
+    if fingerprint != password_reset_fingerprint(user.hashed_password):
+        raise invalid_link
 
     user.hashed_password = hash_password(payload.new_password)
     await session.commit()

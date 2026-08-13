@@ -46,6 +46,7 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 - Uploaded tour media is saved to `backend/media/tours` (volume `tour_media_data`) and served at `/media`. Tour images must be jpeg/png/webp/gif, ≤10MB (`routes/upload.py`).
 - A booking sweeper background task runs in the app lifespan (`core/tasks.py`); restart the api container if lifecycle behavior changes.
 - CORS is restricted to `CORS_ALLOWED_ORIGINS` (env, JSON list); dev default includes `:5173` and `:3000`.
+- JWTs carry a `type` claim and `core/security._decode` refuses any token of the wrong type. Session tokens (`access`) and password reset tokens (`password_reset`) are not interchangeable: a stolen session token must not be able to change a password, and a reset link must not work as an API key. Reset tokens also embed `password_reset_fingerprint(hashed_password)`, which is re-checked on use — changing the password invalidates the link, which is what makes it single-use without a table of issued tokens. Any new token kind gets its own type constant.
 
 ## Frontend (customer site)
 
