@@ -86,7 +86,7 @@ async def update_admin_booking_status(
 
     if payload.status != BookingStatus.CONFIRMED:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Bu endpoint sadece 'confirmed' durumuna geçiş için kullanılır; iptal için cancel uç noktasını kullanın.",
         )
 

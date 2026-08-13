@@ -148,7 +148,7 @@ def _require_slug(slug: str) -> str:
     """Slug'a çevrilebilir karakter içermeyen adlar için 422 döndür."""
     if not slug:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Otel adından slug üretilemedi; slug alanını elle doldurun.",
         )
     return slug

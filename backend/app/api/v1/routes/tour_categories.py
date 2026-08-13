@@ -82,7 +82,7 @@ async def create_category(
     slug = category_in.slug or generate_slug(category_in.name)
     if not slug:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Kategori adından slug üretilemedi; slug alanını elle doldurun.",
         )
     existing = await session.execute(select(TourCategory).where(TourCategory.slug == slug))

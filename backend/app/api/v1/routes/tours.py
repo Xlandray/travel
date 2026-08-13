@@ -175,7 +175,7 @@ async def create_tour(
     slug = tour_in.slug or generate_slug(tour_in.title)
     if not slug:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Tur başlığından slug üretilemedi; slug alanını elle doldurun.",
         )
 
