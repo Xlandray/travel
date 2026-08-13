@@ -228,11 +228,15 @@ function CheckoutContent() {
 
             {/* Kişi Sayısı Seçimi */}
             <div>
-              <label className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-2">
+              <label
+                htmlFor="checkout-seat-count"
+                className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-2"
+              >
                 Kaç Kişi Katılacaksınız?
               </label>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <input
+                  id="checkout-seat-count"
                   type="number"
                   min={1}
                   max={Math.min(10, departure?.available_seats || 10)}
@@ -249,10 +253,14 @@ function CheckoutContent() {
 
             {/* Biniş Noktası Seçimi */}
             <div>
-              <label className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-2">
+              <label
+                htmlFor="checkout-boarding-point"
+                className="block text-xs font-bold text-subtle-token uppercase tracking-wider mb-2"
+              >
                 Biniş Noktası Seçimi
               </label>
               <select
+                id="checkout-boarding-point"
                 value={boardingPointId}
                 onChange={(e) => setBoardingPointId(e.target.value)}
                 className="input-token"

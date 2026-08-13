@@ -13,7 +13,7 @@ export interface SeededDeparture {
   price: number;
 }
 
-async function adminToken(api: APIRequestContext): Promise<string> {
+export async function adminToken(api: APIRequestContext): Promise<string> {
   const response = await api.post(`${API_BASE}/auth/login`, {
     data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
   });

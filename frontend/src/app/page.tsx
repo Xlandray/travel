@@ -282,10 +282,14 @@ export default function LandingPage() {
           className="bg-white/90 border border-slate-200 backdrop-blur-xl p-4 sm:p-6 rounded-2xl shadow-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end"
         >
           <div>
-            <label className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">
+            <label
+              htmlFor="search-boarding-point"
+              className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2"
+            >
               {t("search.boarding_point")}
             </label>
             <select
+              id="search-boarding-point"
               value={selectedPoint}
               onChange={(e) => setSelectedPoint(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
@@ -300,10 +304,14 @@ export default function LandingPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">
+            <label
+              htmlFor="search-category"
+              className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2"
+            >
               {t("search.category")}
             </label>
             <select
+              id="search-category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 text-slate-900 rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
@@ -318,10 +326,14 @@ export default function LandingPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2">
+            <label
+              htmlFor="search-date"
+              className="block text-xs font-bold text-teal-400 uppercase tracking-wider mb-2"
+            >
               {t("search.date")}
             </label>
             <input
+              id="search-date"
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}

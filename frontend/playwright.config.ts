@@ -21,5 +21,11 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3010",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Stage 5's exit criterion asks for the critical journeys on mobile as well as
+  // desktop, so the whole suite runs on both. A booking form that cannot be
+  // submitted on a phone is a booking form that does not work.
+  projects: [
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobile", use: { ...devices["Pixel 5"] } },
+  ],
 });

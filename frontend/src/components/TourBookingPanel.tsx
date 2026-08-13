@@ -48,10 +48,14 @@ export function TourBookingPanel({ departures, boardingPoints }: TourBookingPane
       ) : (
         <>
           <div>
-            <label className="block text-xs font-bold text-subtle-token uppercase mb-2">
+            <label
+              htmlFor="booking-departure"
+              className="block text-xs font-bold text-subtle-token uppercase mb-2"
+            >
               {t("booking.departure_date")}
             </label>
             <select
+              id="booking-departure"
               value={departureId}
               onChange={(e) => setDepartureId(e.target.value)}
               className="input-token"
@@ -66,10 +70,14 @@ export function TourBookingPanel({ departures, boardingPoints }: TourBookingPane
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-subtle-token uppercase mb-2">
+            <label
+              htmlFor="booking-boarding-point"
+              className="block text-xs font-bold text-subtle-token uppercase mb-2"
+            >
               {t("booking.boarding_point")}
             </label>
             <select
+              id="booking-boarding-point"
               value={boardingPointId}
               onChange={(e) => setBoardingPointId(e.target.value)}
               className="input-token"

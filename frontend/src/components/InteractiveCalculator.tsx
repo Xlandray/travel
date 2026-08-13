@@ -43,10 +43,14 @@ export default function InteractiveCalculator({ initialSlug }: InteractiveCalcul
         {/* Input Controls */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-main-token uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="calculator-service"
+              className="block text-xs font-bold text-main-token uppercase tracking-wider mb-1.5"
+            >
               1. Baskı / Reklam Hizmet Türü
             </label>
             <select
+              id="calculator-service"
               value={selectedSlug}
               onChange={(e) => setSelectedSlug(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-white-token border border-token rounded-lg text-sm text-main-token font-semibold focus:ring-2 focus:ring-[var(--color-primary)]"
