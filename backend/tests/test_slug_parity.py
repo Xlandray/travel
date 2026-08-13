@@ -56,20 +56,20 @@ def _slug_expression_from_migration() -> str:
     return re.sub(r"\bname\b", ":value", match.group(1))
 
 
-def test_migration_still_exposes_a_slug_expression():
+def test_migration_still_exposes_a_slug_expression() -> None:
     expression = _slug_expression_from_migration()
     assert "translate(" in expression
     assert "regexp_replace(" in expression
 
 
 @pytest.mark.parametrize("name", NAMES)
-async def test_generate_slug_matches_the_migration(session: AsyncSession, name: str):
+async def test_generate_slug_matches_the_migration(session: AsyncSession, name: str) -> None:
     expression = _slug_expression_from_migration()
     result = await session.execute(text(f"SELECT {expression}"), {"value": name})
     assert generate_slug(name) == result.scalar_one()
 
 
-async def test_unslugable_name_yields_empty_on_both_sides(session: AsyncSession):
+async def test_unslugable_name_yields_empty_on_both_sides(session: AsyncSession) -> None:
     """A name with nothing slug-able must be empty in Python too, not a stray '-'."""
     expression = _slug_expression_from_migration()
     result = await session.execute(text(f"SELECT {expression}"), {"value": "!!! ###"})

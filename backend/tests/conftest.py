@@ -17,7 +17,7 @@ from urllib.parse import urlsplit, urlunsplit
 import asyncpg
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from app.api.deps import get_current_superuser, get_current_user
 from app.core.config import get_settings
@@ -74,14 +74,14 @@ async def test_database_url(dev_database_url: str) -> AsyncIterator[str]:
 
 
 @pytest.fixture(scope="session")
-async def engine(test_database_url: str):
+async def engine(test_database_url: str) -> AsyncIterator[AsyncEngine]:
     eng = create_async_engine(test_database_url, poolclass=None)
     yield eng
     await eng.dispose()
 
 
 @pytest.fixture
-async def session(engine) -> AsyncIterator[AsyncSession]:
+async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
     """A session whose writes are rolled back when the test finishes.
 
     `join_transaction_mode="create_savepoint"` means commits inside the code

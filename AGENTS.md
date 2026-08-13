@@ -60,7 +60,7 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 - Local tooling comes from the extras: `pip install ".[test,dev]"` from `backend/` gets pytest and the pinned ruff. CI installs the same thing.
 - The ruff version is pinned in **two** places that must move together: the `dev` extra in `backend/pyproject.toml` and `rev:` in `.pre-commit-config.yaml`. Different ruff versions can disagree about formatting and the two gates will fight.
 - Type checking is **mypy**, configured in `[tool.mypy]` and pinned in the `dev` extra. Run `mypy` from `backend/`; CI runs it in the backend job. It is not a pre-commit hook: pre-commit would run it in an isolated environment without the project's dependencies and report imports it cannot resolve.
-- mypy is deliberately **not** on `--strict` yet — it is set to the level the codebase passes today (`check_untyped_defs`, `no_implicit_optional`, the pydantic plugin). Tighten it in its own commit so the resulting diff is reviewable.
+- mypy runs with `strict = true`, and the tree passes it with **no** `# type: ignore` comments and no per-module opt-outs. The only relaxation is `ignore_missing_imports` for `asyncpg.*`, which ships no `py.typed`. Keep new code strict rather than adding ignores.
 - prettier is a devDependency of each npm project (single pinned version) and configured repo-wide by `.prettierrc.json` (printWidth 100, matching ruff's line-length). There is no black: `ruff format` is black-compatible and replaced it.
 
 ## Commits

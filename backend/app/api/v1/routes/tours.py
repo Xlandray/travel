@@ -1,6 +1,6 @@
 import uuid
 from datetime import date as date_type
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -28,7 +28,7 @@ from app.schemas.tour import (
 router = APIRouter()
 
 # Default fallback tour data if database is initial
-DEFAULT_TOURS: list[dict] = [
+DEFAULT_TOURS: list[dict[str, Any]] = [
     {
         "id": uuid.UUID("11111111-1111-1111-1111-111111111111"),
         "title": "Kapadokya Turu",

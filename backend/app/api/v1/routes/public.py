@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter
 
 from app.api.deps import SessionDep
@@ -6,8 +8,8 @@ from app.services.setting_service import SettingService
 router = APIRouter()
 
 
-@router.get("/settings", response_model=dict[str, dict])
-async def get_public_settings(session: SessionDep) -> dict[str, dict]:
+@router.get("/settings", response_model=dict[str, dict[str, Any]])
+async def get_public_settings(session: SessionDep) -> dict[str, dict[str, Any]]:
     """Return all application settings as a key -> value map.
 
     Intended for the customer-facing site (footer contact info, social links, etc.).

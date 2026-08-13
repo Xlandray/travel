@@ -156,7 +156,7 @@ def _require_slug(slug: str) -> str:
 
 async def _ensure_slug_available(
     session: SessionDep, slug: str, exclude_id: uuid.UUID | None = None
-):
+) -> None:
     stmt = select(Hotel).where(Hotel.slug == slug)
     result = await session.execute(stmt)
     existing = result.scalar_one_or_none()

@@ -67,13 +67,7 @@ files = ["app", "tests"]
 # The pydantic plugin teaches mypy that BaseSettings and BaseModel fields come
 # from the environment / validation rather than from explicit constructor args.
 plugins = ["pydantic.mypy"]
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-no_implicit_optional = true
-# Deliberately not --strict yet. This is the level the codebase passes today;
-# tighten it in its own commit so the diff is reviewable.
-check_untyped_defs = true
+strict = true
 
 [[tool.mypy.overrides]]
 # asyncpg ships no py.typed marker.

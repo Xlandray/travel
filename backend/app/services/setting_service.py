@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ class SettingService:
     async def list(self, page: int, page_size: int) -> tuple[list[Setting], int]:
         return await self._settings.list((page - 1) * page_size, page_size)
 
-    async def get_public(self) -> dict[str, dict]:
+    async def get_public(self) -> dict[str, dict[str, Any]]:
         settings = await self._settings.get_all()
         return {setting.key: setting.value for setting in settings}
 
