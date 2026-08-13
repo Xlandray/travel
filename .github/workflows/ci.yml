@@ -122,6 +122,88 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+  # Brings the documented stack up with one command and drives it through a
+  # browser. This is also the only job that proves `docker compose up --build`
+  # actually works from a clean checkout.
+  e2e:
+    name: End-to-end (compose stack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Write the env file
+        # Throwaway values for a runner that is destroyed with the job. The app
+        # refuses a JWT secret shorter than 32 characters.
+        run: |
+          cat > .env <<'ENV'
+          POSTGRES_USER=armonitex
+          POSTGRES_PASSWORD=ci-only-postgres-password
+          POSTGRES_DB=armonitex
+          JWT_SECRET_KEY=ci-only-placeholder-key-not-used-anywhere-else
+          CORS_ALLOWED_ORIGINS=["http://localhost:3010","http://localhost:5181"]
+          ENV
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for the API and the web app
+        run: |
+          for i in $(seq 1 60); do
+            api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8081/api/v1/tours || true)
+            web=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3010 || true)
+            admin=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5181 || true)
+            if [ "$api" = "200" ] && [ "$web" = "200" ] && [ "$admin" = "200" ]; then
+              echo "stack is up after ${i}0s"; exit 0
+            fi
+            sleep 10
+          done
+          echo "stack did not come up (api=$api web=$web admin=$admin)"; exit 1
+
+      - name: Create the superuser the seed logs in as
+        env:
+          ADMIN_EMAIL: admin@armonitex.com.tr
+          ADMIN_PASSWORD: Armonitex12345!
+        run: |
+          docker compose run --rm --no-deps \
+            -e ADMIN_EMAIL -e ADMIN_PASSWORD \
+            api python -m app.scripts.bootstrap_superuser
+
+      - name: Install Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run the suite
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3010
+          ADMIN_PANEL_URL: http://localhost:5181
+          NEXT_PUBLIC_API_URL: http://localhost:8081/api/v1
+          E2E_ADMIN_EMAIL: admin@armonitex.com.tr
+          E2E_ADMIN_PASSWORD: Armonitex12345!
+        run: npm run test:e2e
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: |
+            frontend/agent-report
+            frontend/test-results
+          retention-days: 7
+
   images:
     name: Docker images build
     runs-on: ubuntu-latest

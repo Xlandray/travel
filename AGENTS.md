@@ -61,7 +61,11 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 - **Live container gotcha:** the `armonitex-web` container serves a **production build** (`next start`), so after ANY change under `frontend/src` or `frontend/public` you must run `docker compose up -d --build armonitex-web` — restart alone serves the stale build and the change will appear "not working".
 - **Design system rule (ADR-0007):** ad-hoc color classes (`bg-slate-*`, `gray-*`, `black`, `zinc-*`) are banned in components. Use the semantic token classes (`.bg-surface-token`, `.text-brand-token`, `.card-token`, `.btn-primary-token`, etc.) defined in `src/app/globals.css`; change colors only via the `--color-*` variables there.
 - i18n via `src/locales/{tr,en}.json` + `src/lib/i18n.ts` (dictionary-based switcher).
-- Commands (from `frontend/`): `npm run lint` (eslint), `npm run build`. E2E: `npm run test:e2e` (Playwright, chromium only) — requires a built+served app on `:3000`; the config webserver runs `npm run start` and writes JSON to `frontend/agent-report/test-results.json`, which `scripts/master_orchestrator.py` consumes.
+- Commands (from `frontend/`): `npm run lint` (eslint), `npm run build`.
+- **E2E** (`npm run test:e2e`, Playwright, chromium only) runs against the compose stack, not a server it starts itself: `docker compose up -d --build` first, then the suite hits the web app on `:3010`, the API on `:8081` and the admin panel on `:5181`. Override with `PLAYWRIGHT_TEST_BASE_URL` / `NEXT_PUBLIC_API_URL` / `ADMIN_PANEL_URL`. It still writes `frontend/agent-report/test-results.json` for `scripts/master_orchestrator.py`.
+  - `tests/e2e/preflight.ts` is a `globalSetup` that refuses to run unless both services answer **and** the page really is this site. The config used to start `next start` on `:3000` with `reuseExistingServer`, so on a machine with another project up the suite silently tested that project. Do not put `webServer` back.
+  - The specs seed their own tour and departure through the API (`tests/e2e/seed.ts`) instead of picking whatever is in the database, so they work on a clean one. That needs the superuser to exist: `docker compose run --rm --no-deps -e ADMIN_EMAIL -e ADMIN_PASSWORD api python -m app.scripts.bootstrap_superuser`. Credentials come from `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`.
+  - CI runs it in the `e2e` job, which is also the only proof that `docker compose up --build` works from a clean checkout.
 
 ## Admin panel
 
