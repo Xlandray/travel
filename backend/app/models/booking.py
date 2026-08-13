@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 class BookingStatus(enum.StrEnum):
     """Booking lifecycle states."""
 
-
     PENDING = "pending"  # Sepette/Odeme bekliyor
     CONFIRMED = "confirmed"  # Odendi ve Onaylandi
     CANCELLED = "cancelled"  # Iptal edildi
@@ -29,9 +28,7 @@ class Booking(Base, TimestampMixin):
 
     __tablename__ = "bookings"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Iliskiler
     user_id: Mapped[uuid.UUID] = mapped_column(

@@ -31,5 +31,7 @@ async def send_email(to_email: str, subject: str, body: str, html_body: str | No
             logger.error(f"Failed to send email to {to_email}: {e!s}")
             return False
     else:
-        logger.info(f"📧 [EMAIL MOCK NOTIFICATION] To: {to_email} | Subject: {subject}\nBody:\n{body}")
+        logger.info(
+            f"📧 [EMAIL MOCK NOTIFICATION] To: {to_email} | Subject: {subject}\nBody:\n{body}"
+        )
         return True

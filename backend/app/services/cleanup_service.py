@@ -38,9 +38,7 @@ async def release_expired_bookings(db: AsyncSession) -> int:
     for booking in expired_bookings:
         # Kalkis (TourDeparture) kaydini bul ve stogu geri ver
         dep_stmt = (
-            select(TourDeparture)
-            .where(TourDeparture.id == booking.departure_id)
-            .with_for_update()
+            select(TourDeparture).where(TourDeparture.id == booking.departure_id).with_for_update()
         )
         dep_result = await db.execute(dep_stmt)
         departure = dep_result.scalar_one_or_none()

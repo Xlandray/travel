@@ -54,4 +54,3 @@ class UserService:
         if user is None or not user.is_active:
             raise InvalidCredentialsError("User is not available.")
         return user
-

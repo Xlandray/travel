@@ -11,4 +11,3 @@ router = APIRouter()
 async def get_public_contents(session: SessionDep) -> list[ContentRead]:
     data, _ = await ContentService(session).list(page=1, page_size=100)
     return [ContentRead.model_validate(c) for c in data if c.is_published]
-
