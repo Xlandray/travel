@@ -52,9 +52,8 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 ignore = ["RUF001", "E501", "UP046"]
 
-[tool.black]
-line-length = 100
-target-version = ["py312"]
+# No [tool.black]: `ruff format` is the formatter, and it is black-compatible.
+# black was never installed or invoked anywhere, so its config only misled.
 
 [tool.pyrefly]
 project-includes = [

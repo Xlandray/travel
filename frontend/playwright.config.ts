@@ -8,7 +8,7 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['json', { outputFile: 'agent-report/test-results.json' }]
-  ], 
+  ],
   use: {
     baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000', // Armonitex Vitrini
     trace: 'retain-on-failure',

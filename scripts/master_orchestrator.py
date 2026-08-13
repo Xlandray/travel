@@ -35,9 +35,9 @@ def get_docker_logs():
 
 def analyze_results():
     print("🤖 Master Orchestrator Agent initializing QA audit on Ubuntu server...")
-    
+
     os.makedirs("agent-report", exist_ok=True)
-    
+
     if not os.path.exists(REPORT_JSON_PATH):
         print(f"⚠️ Warning: Playwright test report not found at {REPORT_JSON_PATH}")
         report_data = {
@@ -61,11 +61,11 @@ def analyze_results():
     # Generate Markdown Summary Report
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     status_badge = "🟢 APPROVED FOR PRODUCTION" if is_success else "🔴 PRODUCTION RELEASE BLOCKED"
-    
+
     summary_md = f"""# 🛡️ Master Orchestrator Agent: Quality Assurance Report
 
-**Execution Timestamp:** {now_str}  
-**Deployment Decision:** {status_badge}  
+**Execution Timestamp:** {now_str}
+**Deployment Decision:** {status_badge}
 **Architecture Pipeline:** Mac Command Center ➔ Ubuntu Test Runner
 
 ---
@@ -116,7 +116,7 @@ def analyze_results():
 
     print(f"\n{summary_md}\n")
     print(f"📄 Detailed orchestration report saved to: {OUTPUT_MD_PATH}")
-    
+
     return 0 if is_success else 1
 
 if __name__ == "__main__":

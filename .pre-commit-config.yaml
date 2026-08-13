@@ -1,0 +1,55 @@
+# Install once per clone: `pre-commit install`
+# Run over everything: `pre-commit run --all-files`
+#
+# CI runs the same hooks, so a commit made with --no-verify is still caught.
+default_install_hook_types: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^.*\.(md|snap)$
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-yaml
+      - id: check-json
+        exclude: ^(frontend|admin-panel)/tsconfig.*\.json$ # tsconfig allows comments
+      - id: check-toml
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Keep this rev and the pinned ruff in .github/workflows/ci.yml in step;
+  # different ruff versions can disagree about formatting.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # Secret scanning. The plan asks for it and nothing was checking before.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # prettier comes from each project's own devDependencies rather than a
+  # mirror repo, so the version is pinned in one place: package.json.
+  - repo: local
+    hooks:
+      - id: prettier-frontend
+        name: prettier (frontend)
+        entry: npx --prefix frontend prettier --write
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx|css)$
+      - id: prettier-admin-panel
+        name: prettier (admin-panel)
+        entry: npx --prefix admin-panel prettier --write
+        language: system
+        files: ^admin-panel/src/.*\.(ts|tsx|css)$
