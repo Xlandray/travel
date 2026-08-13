@@ -72,9 +72,9 @@ jobs:
           cache-dependency-path: backend/pyproject.toml
 
       - name: Install
-        # ruff is pinned to the rev used by .pre-commit-config.yaml; different
-        # versions can disagree about formatting and the two gates would fight.
-        run: pip install ".[test]" "ruff==0.16.2"
+        # ruff comes from the pinned `dev` extra rather than an ad-hoc install,
+        # so a fresh clone gets the same version this job uses.
+        run: pip install ".[test,dev]"
 
       - name: Lint
         run: ruff check .

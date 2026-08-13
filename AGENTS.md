@@ -57,7 +57,9 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 
 - `pre-commit install` once per clone. Hooks: whitespace/EOF/line-ending fixers, YAML/JSON/TOML validity, private-key and **gitleaks** secret scanning, `ruff check --fix` + `ruff format` over `backend/`, and prettier over `frontend/src` and `admin-panel/src`. Run everything with `pre-commit run --all-files`.
 - `.github/workflows/ci.yml` runs the same hooks plus pytest, both npm lint/build pairs, and an api image build — so a commit pushed with `--no-verify` is still caught. It is verified to reject a bad change, not just to pass.
-- The ruff version is pinned in **two** places that must move together: `rev:` in `.pre-commit-config.yaml` and `ruff==` in the CI workflow. Different ruff versions can disagree about formatting and the two gates will fight.
+- Local tooling comes from the extras: `pip install ".[test,dev]"` from `backend/` gets pytest and the pinned ruff. CI installs the same thing.
+- The ruff version is pinned in **two** places that must move together: the `dev` extra in `backend/pyproject.toml` and `rev:` in `.pre-commit-config.yaml`. Different ruff versions can disagree about formatting and the two gates will fight.
+- There is **no Python type checker**. `[tool.pyrefly]` used to be configured but pyrefly was never a dependency and never ran, so the block was removed rather than left implying a gate that did not exist. Adding one is an open decision.
 - prettier is a devDependency of each npm project (single pinned version) and configured repo-wide by `.prettierrc.json` (printWidth 100, matching ruff's line-length). There is no black: `ruff format` is black-compatible and replaced it.
 
 ## Commits
