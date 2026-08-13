@@ -29,7 +29,9 @@ Only file mounts are `backend/app`, `admin-panel/src`, `frontend/src`, `frontend
 
 ## Backend
 
-- No backend test framework or tools are configured (no pytest deps in `pyproject.toml`). Verification = `ruff check . && ruff format --check .` (line-length 100, py312) run from `backend/`.
+- Verification = `ruff check . && ruff format --check .` (line-length 100, py312) run from `backend/`, plus `docker compose run --rm test` from the repo root for pytest.
+- Tests live in `backend/tests/` and run against a real PostgreSQL. `conftest.py` drops, recreates and migrates a separate `${POSTGRES_DB}_test` database through the real Alembic chain on every run, so the dev database is never touched and a migration that will not apply fails the suite. Each test's session is rolled back afterwards, so tests do not see each other's rows. pytest/httpx live in the `test` extra and are installed only into the image built by the `test` compose service (`INSTALL_TEST=true`), keeping them out of the runtime image.
+- `pythonpath = ["."]` in `[tool.pytest.ini_options]` is load-bearing: without it `import app` resolves to the copy `pip install .` baked into site-packages at build time instead of the mounted working tree, and the suite silently passes against stale code.
 - `DATABASE_URL` **must** use the `postgresql+asyncpg://` scheme; the validator in `config.py` and `alembic/env.py` both reject anything else. Alembic migrations require `DATABASE_URL` in the environment.
 - New models: add them so `app/models/__init__.py` imports them — `alembic/env.py` works off `Base.metadata` via `import app.models`. Generate new migrations with the `migrate` flow, never edit applied ones.
 - Layered structure: `routes/` → `services/` → `repositories/` → models, with Pydantic schemas and `schemas/__init__.py` re-exports. Match existing patterns when adding features (see tours/bookings/upload for the newest examples).

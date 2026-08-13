@@ -12,7 +12,9 @@ COPY app ./app
 COPY alembic.ini ./
 COPY alembic ./alembic
 
-RUN pip install .
+# Test dependencies stay out of the runtime image unless explicitly requested.
+ARG INSTALL_TEST=false
+RUN if [ "$INSTALL_TEST" = "true" ]; then pip install ".[test]"; else pip install .; fi
 
 EXPOSE 8000
 

@@ -17,12 +17,32 @@ dependencies = [
     "uvicorn[standard]>=0.35,<1.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3,<9.0",
+    "pytest-asyncio>=0.24,<1.2",
+    "httpx>=0.27,<1.0",
+]
+
 [build-system]
 requires = ["setuptools>=80"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Without this, `import app` resolves to the copy pip baked into site-packages
+# at image build time instead of the mounted working tree, and the suite
+# silently tests stale code.
+pythonpath = ["."]
+asyncio_mode = "auto"
+# Fixtures and tests must share one loop: the engine is session-scoped, and
+# asyncpg connections cannot cross event loops.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+addopts = "-q --strict-markers"
 
 [tool.ruff]
 target-version = "py312"

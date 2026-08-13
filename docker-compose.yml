@@ -72,6 +72,25 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
 
+  # Not started by `docker compose up`; run it with
+  # `docker compose run --rm test`. It builds its own image so pytest and httpx
+  # stay out of the runtime image, and it works on its own `*_test` database.
+  test:
+    build:
+      context: ./backend
+      args:
+        INSTALL_TEST: "true"
+    command: ["pytest"]
+    environment: *api_environment
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - ./backend/alembic:/app/alembic
+    profiles: ["test"]
+
 volumes:
   postgres_data:
   tour_media_data:
