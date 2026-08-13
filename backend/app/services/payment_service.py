@@ -7,9 +7,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import User
+from app.models.audit_log import AuditAction
 from app.models.booking import BookingStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
-from app.services import booking_service
+from app.services import audit_service, booking_service
 from app.services.booking_service import lock_booking
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def _new_transaction_id(length: int = 16) -> str:
 
 async def create_payment(
     db: AsyncSession,
-    user_id: uuid.UUID | str,
+    actor: User,
     booking_id: uuid.UUID | str,
     method: PaymentMethod,
 ) -> Payment:
@@ -72,8 +74,7 @@ async def create_payment(
             detail="Rezervasyon bulunamadi.",
         )
 
-    user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-    if booking.user_id != user_uuid:
+    if booking.user_id != actor.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bu rezervasyona odeme acma yetkiniz yok.",
@@ -102,6 +103,18 @@ async def create_payment(
         status=PaymentStatus.PENDING,
     )
     db.add(payment)
+    await db.flush()
+
+    audit_service.record(
+        db,
+        AuditAction.PAYMENT_OPENED,
+        actor=actor,
+        booking_id=booking_uuid,
+        payment_id=payment.id,
+        amount=payment.amount,
+        detail={"method": method.value},
+    )
+
     await db.commit()
     await db.refresh(payment)
     logger.info(f"Payment {payment.id} opened for booking {booking_uuid} via {method.value}.")
@@ -110,7 +123,7 @@ async def create_payment(
 
 async def mock_pay(
     db: AsyncSession,
-    user_id: uuid.UUID | str,
+    actor: User,
     payment_id: uuid.UUID | str,
 ) -> Payment:
     """Simulate a successful card charge against a PENDING payment.
@@ -124,14 +137,13 @@ async def mock_pay(
     still PENDING.
     """
     payment_uuid = uuid.UUID(payment_id) if isinstance(payment_id, str) else payment_id
-    user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
 
     booking_id = await _booking_id_of(db, payment_uuid)
 
     booking_result = await db.execute(lock_booking(booking_id))
     booking = booking_result.scalar_one_or_none()
 
-    if not booking or booking.user_id != user_uuid:
+    if not booking or booking.user_id != actor.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bu odemeyi tamamlama yetkiniz yok.",
@@ -164,6 +176,25 @@ async def mock_pay(
 
     booking.status = BookingStatus.CONFIRMED
 
+    audit_service.record(
+        db,
+        AuditAction.PAYMENT_PAID,
+        actor=actor,
+        booking_id=booking.id,
+        payment_id=payment.id,
+        amount=payment.amount,
+        detail={"method": payment.method.value, "transaction_id": payment.transaction_id},
+    )
+    audit_service.record(
+        db,
+        AuditAction.BOOKING_CONFIRMED,
+        actor=actor,
+        booking_id=booking.id,
+        payment_id=payment.id,
+        amount=booking.total_price,
+        detail={"seat_count": booking.seat_count, "by": "payment"},
+    )
+
     await db.commit()
     await db.refresh(payment)
     logger.info(
@@ -176,6 +207,7 @@ async def mock_pay(
 async def refund_payment(
     db: AsyncSession,
     payment_id: uuid.UUID | str,
+    actor: User,
 ) -> Payment:
     """Admin-level refund: refunds a PAID payment and cancels its booking.
 
@@ -211,7 +243,20 @@ async def refund_payment(
     payment.status = PaymentStatus.REFUNDED
     payment.refunded_at = datetime.now(UTC)
 
-    await booking_service.cancel_booking(payment.booking_id, db)
+    # Money leaving the business. Written before `cancel_booking`, which
+    # commits, so the entry is carried by that same commit rather than a later
+    # one that might never happen.
+    audit_service.record(
+        db,
+        AuditAction.PAYMENT_REFUNDED,
+        actor=actor,
+        booking_id=payment.booking_id,
+        payment_id=payment.id,
+        amount=payment.amount,
+        detail={"method": payment.method.value, "transaction_id": payment.transaction_id},
+    )
+
+    await booking_service.cancel_booking(payment.booking_id, db, actor=actor)
 
     await db.commit()
     await db.refresh(payment)
@@ -222,6 +267,7 @@ async def refund_payment(
 async def confirm_transfer(
     db: AsyncSession,
     payment_id: uuid.UUID | str,
+    actor: User,
 ) -> Payment:
     """Admin marks a remittance as arrived: the payment is PAID, booking CONFIRMED.
 
@@ -259,6 +305,29 @@ async def confirm_transfer(
     payment.paid_at = datetime.now(UTC)
     payment.transaction_id = payment.transaction_id or "ADMIN-CONFIRM"
     booking.status = BookingStatus.CONFIRMED
+
+    audit_service.record(
+        db,
+        AuditAction.PAYMENT_PAID,
+        actor=actor,
+        booking_id=booking.id,
+        payment_id=payment.id,
+        amount=payment.amount,
+        detail={
+            "method": payment.method.value,
+            "transaction_id": payment.transaction_id,
+            "by": "admin",
+        },
+    )
+    audit_service.record(
+        db,
+        AuditAction.BOOKING_CONFIRMED,
+        actor=actor,
+        booking_id=booking.id,
+        payment_id=payment.id,
+        amount=booking.total_price,
+        detail={"seat_count": booking.seat_count, "by": "admin"},
+    )
 
     await db.commit()
     await db.refresh(payment)

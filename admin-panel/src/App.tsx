@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ResourceListPage } from "./pages/ResourceListPage";
 import { Dashboard } from "./pages/Dashboard";
 import { BookingsPage } from "./pages/bookings/BookingsPage";
+import { AuditLogPage } from "./pages/audit/AuditLogPage";
 import { TourCreate } from "./pages/tours/create";
 import { TourEdit } from "./pages/tours/edit";
 import { TourDepartureCreate } from "./pages/tour-departures/create";
@@ -80,6 +81,11 @@ const resources = [
     list: "/users",
     edit: "/users/edit/:id",
     meta: { label: "Kullanıcılar" },
+  },
+  {
+    name: "admin/audit-logs",
+    list: "/audit-logs",
+    meta: { label: "Denetim Günlüğü" },
   },
 ];
 
@@ -162,6 +168,7 @@ export default function App() {
                   }
                 />
                 <Route path="/users/edit/:id" element={<UserForm />} />
+                <Route path="/audit-logs" element={<AuditLogPage />} />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
               <Route path="*" element={<Navigate replace to="/login" />} />

@@ -4,8 +4,10 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingStatus
 from app.models.tour import TourDeparture
+from app.services import audit_service
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,17 @@ async def release_expired_bookings(db: AsyncSession) -> int:
         # 2. Rezervasyonu Iptal Et
         booking.status = BookingStatus.CANCELLED
         released_count += 1
+
+        # No actor: nobody asked for this, a timer did. The trail has to say so
+        # rather than leave a cancellation that looks like somebody's decision.
+        audit_service.record(
+            db,
+            AuditAction.BOOKING_EXPIRED,
+            actor=None,
+            booking_id=booking.id,
+            amount=booking.total_price,
+            detail={"seat_count": booking.seat_count, "by": "sweeper"},
+        )
 
         logger.info(
             f"Zaman asimi: {booking.id} nolu rezervasyon iptal edildi. {booking.seat_count} koltuk iade edildi."

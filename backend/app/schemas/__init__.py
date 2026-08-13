@@ -1,5 +1,6 @@
 """Pydantic DTOs used at the API boundary."""
 
+from app.schemas.audit_log import AuditLogRead
 from app.schemas.auth import Token, TokenPayload
 from app.schemas.booking import (
     BookingBase,
@@ -31,6 +32,7 @@ from app.schemas.user import AdminUserUpdate, UserCreate, UserRead, UserUpdate
 
 __all__ = [
     "AdminUserUpdate",
+    "AuditLogRead",
     "BoardingPointRead",
     "BoardingPointResponse",
     "BookingBase",

@@ -39,7 +39,7 @@ async def create_booking_payment(
     """Open a new payment attempt for one of the current user's PENDING bookings."""
     payment = await payment_service.create_payment(
         db=session,
-        user_id=current_user.id,
+        actor=current_user,
         booking_id=payment_in.booking_id,
         method=payment_in.method,
     )
@@ -61,7 +61,7 @@ async def pay_booking(
     """Simulate a successful card charge and confirm the linked booking."""
     payment = await payment_service.mock_pay(
         db=session,
-        user_id=current_user.id,
+        actor=current_user,
         payment_id=payment_id,
     )
     return PaymentResponse.model_validate(payment)

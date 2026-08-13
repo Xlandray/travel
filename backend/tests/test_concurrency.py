@@ -28,6 +28,7 @@ from app.core.security import create_access_token
 from app.db.session import get_session
 from app.main import app
 from app.models import User
+from app.models.audit_log import AuditAction, AuditLog
 from app.models.booking import Booking
 from app.models.payment import Payment
 from app.models.tour import Tour, TourDeparture
@@ -118,6 +119,10 @@ async def world(live_sessions: SessionFactory) -> AsyncIterator[World]:
 
     async with live_sessions() as session:
         booking_ids = select(Booking.id).where(Booking.departure_id == state.departure_id)
+        # Audit rows are committed for real here, and nothing cascades them
+        # away by design, so this fixture has to clear them itself or they leak
+        # into every later test that counts entries.
+        await session.execute(delete(AuditLog).where(AuditLog.booking_id.in_(booking_ids)))
         await session.execute(delete(Payment).where(Payment.booking_id.in_(booking_ids)))
         await session.execute(delete(Booking).where(Booking.departure_id == state.departure_id))
         await session.execute(delete(TourDeparture).where(TourDeparture.id == state.departure_id))
@@ -435,6 +440,66 @@ class TestMixedStorm:
         left = await seats_left(live_sessions, world.departure_id)
         held = await held_seats(live_sessions, world.departure_id)
         assert left + held == world.quota, f"available={left} held={held}"
+
+
+class TestTheAuditTrailIsActuallyCommitted:
+    """Read the trail from a connection that never touched the write.
+
+    `test_audit_api.py` cannot answer this question. Its session both performs
+    the request and reads the result, and SQLAlchemy autoflushes before a query,
+    so an entry that was only ever added to the session — never committed —
+    still shows up there. Recording after the commit instead of before it would
+    pass every test in that file and write nothing to the database.
+    """
+
+    async def test_a_refund_leaves_a_row_another_connection_can_see(
+        self, live_client: AsyncClient, live_sessions: SessionFactory, world: World
+    ) -> None:
+        booked = await live_client.post(
+            "/bookings/",
+            json={"departure_id": str(world.departure_id), "seat_count": 1},
+            headers=auth(world.tokens[1]),
+        )
+        assert booked.status_code == 201, booked.text
+        booking_id = booked.json()["id"]
+
+        opened = await live_client.post(
+            "/payments/",
+            json={"booking_id": booking_id, "method": "card"},
+            headers=auth(world.tokens[1]),
+        )
+        assert opened.status_code == 201, opened.text
+        payment_id = opened.json()["id"]
+
+        paid = await live_client.post(f"/payments/{payment_id}/pay", headers=auth(world.tokens[1]))
+        assert paid.status_code == 200, paid.text
+
+        refunded = await live_client.post(
+            f"/admin/payments/{payment_id}/refund", headers=auth(world.tokens[0])
+        )
+        assert refunded.status_code == 200, refunded.text
+
+        async with live_sessions() as reader:
+            rows = (
+                (
+                    await reader.execute(
+                        select(AuditLog.action)
+                        .where(AuditLog.booking_id == uuid.UUID(booking_id))
+                        .order_by(AuditLog.seq)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+
+        assert list(rows) == [
+            AuditAction.BOOKING_CREATED,
+            AuditAction.PAYMENT_OPENED,
+            AuditAction.PAYMENT_PAID,
+            AuditAction.BOOKING_CONFIRMED,
+            AuditAction.PAYMENT_REFUNDED,
+            AuditAction.BOOKING_CANCELLED,
+        ]
 
 
 class TestRealTokenAuth:

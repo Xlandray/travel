@@ -45,7 +45,7 @@ async def create_tour_booking(
     """
     new_booking = await booking_service.create_booking(
         db=db,
-        user_id=current_user.id,
+        actor=current_user,
         departure_id=booking_in.departure_id,
         seat_count=booking_in.seat_count,
         boarding_point_id=booking_in.boarding_point_id,
@@ -128,5 +128,7 @@ async def cancel_user_booking(
             detail="Rezervasyon bulunamadi.",
         )
 
-    cancelled = await booking_service.cancel_pending_booking(db=session, booking_id=booking.id)
+    cancelled = await booking_service.cancel_pending_booking(
+        db=session, booking_id=booking.id, actor=current_user
+    )
     return BookingResponse.model_validate(cancelled)

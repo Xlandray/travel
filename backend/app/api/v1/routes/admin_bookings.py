@@ -6,11 +6,13 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import SessionDep, get_current_superuser
+from app.api.deps import CurrentSuperuser, SessionDep, get_current_superuser
+from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingStatus
 from app.models.tour import TourDeparture
 from app.schemas.booking import BookingResponse, booking_to_response
 from app.schemas.pagination import Page
+from app.services import audit_service
 from app.services.booking_service import cancel_booking
 
 router = APIRouter(dependencies=[Depends(get_current_superuser)])
@@ -72,7 +74,10 @@ async def get_admin_booking(booking_id: uuid.UUID, session: SessionDep) -> Booki
 
 @router.patch("/bookings/{booking_id}", response_model=BookingResponse)
 async def update_admin_booking_status(
-    booking_id: uuid.UUID, payload: BookingStatusUpdate, session: SessionDep
+    booking_id: uuid.UUID,
+    payload: BookingStatusUpdate,
+    session: SessionDep,
+    current_user: CurrentSuperuser,
 ) -> BookingResponse:
     """Confirm a pending booking. Cancellation goes through POST .../cancel."""
     stmt = select(Booking).options(*BOOKING_JOINED_LOAD).where(Booking.id == booking_id)
@@ -99,16 +104,29 @@ async def update_admin_booking_status(
             detail="İptal edilmiş rezervasyon onaylanamaz; koltukları yeniden satışa açıldı.",
         )
 
+    previous = booking.status
     booking.status = BookingStatus.CONFIRMED
+
+    audit_service.record(
+        session,
+        AuditAction.BOOKING_CONFIRMED,
+        actor=current_user,
+        booking_id=booking.id,
+        amount=booking.total_price,
+        detail={"seat_count": booking.seat_count, "from": previous.value, "by": "admin"},
+    )
+
     await session.commit()
     await session.refresh(booking)
     return booking_to_response(booking)
 
 
 @router.post("/bookings/{booking_id}/cancel", response_model=BookingResponse)
-async def cancel_admin_booking(booking_id: uuid.UUID, session: SessionDep) -> BookingResponse:
+async def cancel_admin_booking(
+    booking_id: uuid.UUID, session: SessionDep, current_user: CurrentSuperuser
+) -> BookingResponse:
     """Cancel a booking (any status) and release the reserved seats back."""
-    booking = await cancel_booking(booking_id, session)
+    booking = await cancel_booking(booking_id, session, actor=current_user)
     stmt = select(Booking).options(*BOOKING_JOINED_LOAD).where(Booking.id == booking.id)
     result = await session.execute(stmt)
     return booking_to_response(result.scalar_one())

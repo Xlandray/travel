@@ -5,8 +5,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import User
+from app.models.audit_log import AuditAction
 from app.models.booking import Booking, BookingStatus
 from app.models.tour import TourDeparture
+from app.services import audit_service
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +48,13 @@ def lock_departure(departure_id: uuid.UUID) -> Select[tuple[TourDeparture]]:
 
 async def create_booking(
     db: AsyncSession,
-    user_id: uuid.UUID | str,
+    actor: User,
     departure_id: uuid.UUID | str,
     seat_count: int,
     boarding_point_id: uuid.UUID | str | None = None,
 ) -> Booking:
     """Create a tour booking with row-level locking (with_for_update) to prevent race conditions."""
-    user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    user_id_uuid = actor.id
     departure_id_uuid = uuid.UUID(departure_id) if isinstance(departure_id, str) else departure_id
     boarding_point_uuid = (
         uuid.UUID(boarding_point_id)
@@ -92,6 +95,22 @@ async def create_booking(
     departure.available_seats -= seat_count
 
     db.add(new_booking)
+    # Flush, not commit: the booking needs an id before the audit entry can
+    # point at it, but both still have to land in one transaction.
+    await db.flush()
+
+    audit_service.record(
+        db,
+        AuditAction.BOOKING_CREATED,
+        actor=actor,
+        booking_id=new_booking.id,
+        amount=total_price,
+        detail={
+            "departure_id": str(departure_id_uuid),
+            "seat_count": seat_count,
+            "seats_left": departure.available_seats,
+        },
+    )
 
     # Islemi Veritabanina Yansit ve Kilidi Serbest Birak
     await db.commit()
@@ -103,6 +122,7 @@ async def create_booking(
 async def cancel_pending_booking(
     db: AsyncSession,
     booking_id: uuid.UUID | str,
+    actor: User,
 ) -> Booking:
     """Self-service cancel: drop a PENDING booking and release its seats once.
 
@@ -134,6 +154,16 @@ async def cancel_pending_booking(
         departure.available_seats += booking.seat_count
 
     booking.status = BookingStatus.CANCELLED
+
+    audit_service.record(
+        db,
+        AuditAction.BOOKING_CANCELLED,
+        actor=actor,
+        booking_id=booking.id,
+        amount=booking.total_price,
+        detail={"seat_count": booking.seat_count, "by": "customer"},
+    )
+
     await db.commit()
     # `updated_at` is server-managed (FetchedValue), so it is expired by the
     # UPDATE and has to be re-read before anything serialises the booking.
@@ -145,6 +175,7 @@ async def cancel_pending_booking(
 async def cancel_booking(
     booking_id: uuid.UUID | str,
     db: AsyncSession,
+    actor: User | None,
 ) -> Booking:
     """Admin-level cancel: releases reserved seats back for any non-cancelled booking.
 
@@ -166,6 +197,16 @@ async def cancel_booking(
         if departure:
             departure.available_seats += booking.seat_count
         booking.status = BookingStatus.CANCELLED
+
+        audit_service.record(
+            db,
+            AuditAction.BOOKING_CANCELLED,
+            actor=actor,
+            booking_id=booking.id,
+            amount=booking.total_price,
+            detail={"seat_count": booking.seat_count, "by": "admin"},
+        )
+
         await db.commit()
         await db.refresh(booking)
         logger.info(

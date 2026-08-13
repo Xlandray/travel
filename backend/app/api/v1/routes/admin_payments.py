@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import SessionDep, get_current_superuser
+from app.api.deps import CurrentSuperuser, SessionDep, get_current_superuser
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.schemas.pagination import Page
 from app.schemas.payment import PaymentResponse
@@ -61,16 +61,20 @@ async def get_admin_payment(payment_id: uuid.UUID, session: SessionDep) -> Payme
 
 
 @router.post("/payments/{payment_id}/refund", response_model=PaymentResponse)
-async def refund_admin_payment(payment_id: uuid.UUID, session: SessionDep) -> PaymentResponse:
+async def refund_admin_payment(
+    payment_id: uuid.UUID, session: SessionDep, current_user: CurrentSuperuser
+) -> PaymentResponse:
     """Refund a PAID payment; the linked booking is cancelled and seats released."""
-    payment = await payment_service.refund_payment(session, payment_id)
+    payment = await payment_service.refund_payment(session, payment_id, actor=current_user)
     stmt = select(Payment).options(selectinload(Payment.booking)).where(Payment.id == payment.id)
     result = await session.execute(stmt)
     return PaymentResponse.model_validate(result.scalar_one())
 
 
 @router.post("/payments/{payment_id}/confirm", response_model=PaymentResponse)
-async def confirm_transfer_payment(payment_id: uuid.UUID, session: SessionDep) -> PaymentResponse:
+async def confirm_transfer_payment(
+    payment_id: uuid.UUID, session: SessionDep, current_user: CurrentSuperuser
+) -> PaymentResponse:
     """Manually confirm a TRANSFER payment (admin marks that the remittance arrived)."""
-    payment = await payment_service.confirm_transfer(session, payment_id)
+    payment = await payment_service.confirm_transfer(session, payment_id, actor=current_user)
     return PaymentResponse.model_validate(payment)

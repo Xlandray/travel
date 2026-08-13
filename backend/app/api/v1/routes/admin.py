@@ -2,11 +2,14 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 
 from app.api.deps import CurrentSuperuser, SessionDep, get_current_superuser
 from app.domain.exceptions import ResourceConflictError, ResourceNotFoundError
+from app.models.audit_log import AuditAction
 from app.schemas import (
     AdminUserUpdate,
+    AuditLogRead,
     ContentCreate,
     ContentRead,
     ContentUpdate,
@@ -16,6 +19,7 @@ from app.schemas import (
     SettingUpdate,
     UserRead,
 )
+from app.services import audit_service
 from app.services.admin_user_service import AdminUserService
 from app.services.content_service import ContentService
 from app.services.setting_service import SettingService
@@ -76,6 +80,35 @@ async def get_user(user_id: uuid.UUID, session: SessionDep) -> UserRead:
         return UserRead.model_validate(user)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
+
+
+@router.get("/audit-logs", response_model=Page[AuditLogRead])
+async def list_audit_logs(
+    session: SessionDep,
+    page: PageNumber = 1,
+    page_size: PageSize = 25,
+    action: AuditAction | None = None,
+    booking_id: uuid.UUID | None = None,
+    payment_id: uuid.UUID | None = None,
+    actor_id: uuid.UUID | None = None,
+) -> Page[AuditLogRead]:
+    """The money and seat trail, newest first.
+
+    Read-only by design: entries are written by the operations they describe
+    and there is deliberately no endpoint that edits or deletes one. A log an
+    administrator can tidy up is not evidence of anything.
+    """
+    stmt = audit_service.list_entries(
+        action=action, booking_id=booking_id, payment_id=payment_id, actor_id=actor_id
+    )
+
+    total = await session.scalar(select(func.count()).select_from(stmt.order_by(None).subquery()))
+    rows = await session.execute(stmt.offset((page - 1) * page_size).limit(page_size))
+
+    return Page(
+        data=[AuditLogRead.model_validate(row) for row in rows.scalars().all()],
+        total=int(total or 0),
+    )
 
 
 @router.get("/contents", response_model=Page[ContentRead])

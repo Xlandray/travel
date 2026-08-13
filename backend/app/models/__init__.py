@@ -1,3 +1,4 @@
+from app.models.audit_log import AuditAction, AuditLog
 from app.models.booking import Booking, BookingStatus
 from app.models.content import Content
 from app.models.hotel import Hotel, TourHotel
@@ -8,6 +9,8 @@ from app.models.tour import BoardingPoint, Tour, TourDeparture, tour_boarding_po
 from app.models.user import User
 
 __all__ = [
+    "AuditAction",
+    "AuditLog",
     "BoardingPoint",
     "Booking",
     "BookingStatus",
