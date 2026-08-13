@@ -10,7 +10,23 @@ Armonitex Travel monorepo: three packages + ops tooling, all orchestrated via Do
 - `docs/adr/` — Architecture Decision Records, written in Turkish, append-only (new decisions get the next number).
 - `scripts/` — `master_orchestrator.py` QA gate + ssh runner scripts.
 
-**Directory gotcha:** `docker-compose.prod.yml`, `docs/ARCHITECTURE_AND_HANDOVER.md`, and `scripts/master_orchestrator.py` still reference `armonitex-web/`, but the web app now lives in `frontend/`. Do not create `armonitex-web/`.
+**Directory gotcha:** `docs/ARCHITECTURE_AND_HANDOVER.md` and `scripts/master_orchestrator.py` still reference `armonitex-web/`, but the web app now lives in `frontend/`. Do not create `armonitex-web/`. (`docker-compose.prod.yml` used to as well, which is why the production stack could not build; it no longer does.)
+
+## Production
+
+Self-hosted on an always-on machine, published through a Cloudflare Tunnel. The customer site is on Vercel; only the API and the admin panel run on the box.
+
+```
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+- **No host ports are published.** `cloudflared` dials out and reaches the other services over the compose network, so the machine needs no inbound firewall rule. Map the hostnames in the Cloudflare dashboard: `api.<domain>` → `http://api:8000`, `admin.<domain>` → `http://admin-panel:80`.
+- **`--forwarded-allow-ips *` on the api command is load-bearing.** Upload responses are built from `request.base_url`, and those URLs are stored in the database. Without the flag the app ignores `X-Forwarded-Proto` and returns `http://…` behind the tunnel — verified: with the flag a request carrying `X-Forwarded-Proto: https` yields `https://api.example.com/media/…`, without it the same request yields `http://`. The browser blocks that as mixed content on the HTTPS panel, and the wrong URL is persisted. Trusting all peers is safe here only because no port is published.
+- The api runs 4 gunicorn workers, so 4 copies of the booking sweeper. That is safe: it claims rows with `FOR UPDATE SKIP LOCKED`, so workers divide the work instead of releasing seats twice.
+- Uploaded media lives in the `tour_media_prod_data` volume. It is a named volume, not a bind mount — do not `docker compose down -v` in production.
+- `admin-panel` builds its `prod` stage: a real `vite build` served by nginx with SPA fallback. The dev stage (Vite dev server) is what `docker-compose.yml` uses. `VITE_API_URL` is inlined at build time, so changing it needs a rebuild, not a restart.
+- Copy `.env.prod.example` to `.env.prod` on the host. `CORS_ALLOWED_ORIGINS` must list the Vercel origin **and** the admin origin, exactly.
+- **Vercel needs `NEXT_PUBLIC_API_URL` set to the public API URL and a redeploy.** It is inlined at build time. Without it the deployed bundle falls back to `http://localhost:8081/api/v1`, which in a visitor's browser means their own machine — the site loads but every API call fails silently.
 
 ## Local development
 

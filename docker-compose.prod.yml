@@ -1,3 +1,19 @@
+# Production stack for a self-hosted, always-on machine, published through a
+# Cloudflare Tunnel.
+#
+# Nothing here publishes a host port. cloudflared dials out to Cloudflare and
+# reaches the other services over the compose network, so the machine needs no
+# inbound firewall rule at all. Route the hostnames in the Cloudflare dashboard:
+#
+#   api.<domain>    -> http://api:8000
+#   admin.<domain>  -> http://admin-panel:80
+#
+# The customer site is not here: it is deployed to Vercel. This file used to
+# build it from ./armonitex-web, a directory that does not exist, which meant
+# the production stack could not build at all.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
 services:
   db:
     image: postgres:16-alpine
@@ -25,7 +41,10 @@ services:
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-noreply@armonitex.com.tr}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-change-me}
+      # Left at the sentinel the application checks for, which makes it log
+      # messages instead of attempting SMTP. Any other placeholder makes it try
+      # a real connection and fail quietly.
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-change-me-in-production}
     depends_on:
       db:
         condition: service_healthy
@@ -34,10 +53,32 @@ services:
   api:
     build:
       context: ./backend
-    command: ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000"]
-    ports:
-      - "${API_PORT:-8080}:8000"
+    # --forwarded-allow-ips: cloudflared terminates TLS and forwards over the
+    # compose network, so without trusting its X-Forwarded-* headers the app
+    # believes it is serving plain http. Upload responses are built from
+    # request.base_url, so the admin panel would be handed http:// image URLs
+    # and the browser would block them as mixed content. Trusting every peer is
+    # safe here precisely because no port is published: only cloudflared can
+    # reach this container.
+    command:
+      [
+        "gunicorn",
+        "-w",
+        "4",
+        "-k",
+        "uvicorn.workers.UvicornWorker",
+        "app.main:app",
+        "--bind",
+        "0.0.0.0:8000",
+        "--forwarded-allow-ips",
+        "*",
+      ]
     environment: *api_env
+    # Four workers means four copies of the booking sweeper. That is safe: it
+    # claims rows with `FOR UPDATE SKIP LOCKED`, so the workers divide the work
+    # rather than releasing the same seats twice.
+    volumes:
+      - tour_media_prod_data:/app/media
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -46,27 +87,27 @@ services:
   admin-panel:
     build:
       context: ./admin-panel
-    ports:
-      - "${ADMIN_PORT:-5180}:5173"
-    environment:
-      VITE_API_URL: https://api.armonitex.com.tr/api/v1
+      target: prod
+      args:
+        # Baked into the bundle at build time; changing it needs a rebuild.
+        VITE_API_URL: ${ADMIN_API_URL:?ADMIN_API_URL must be set, e.g. https://api.example.com/api/v1}
     depends_on:
       api:
         condition: service_started
     restart: always
 
-  armonitex-web:
-    build:
-      context: ./armonitex-web
-    ports:
-      - "${WEB_PORT:-3005}:3000"
+  cloudflared:
+    # Pin this once you have verified a version; an edge component is one of the
+    # few places where tracking the current release is the safer default.
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: ["tunnel", "--no-autoupdate", "run"]
     environment:
-      NEXT_PUBLIC_API_URL: https://api.armonitex.com.tr/api/v1
-      NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN must be set}
     depends_on:
       api:
         condition: service_started
-    restart: always
 
 volumes:
   postgres_prod_data:
+  tour_media_prod_data:
