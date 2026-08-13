@@ -48,6 +48,10 @@ services:
   admin-panel:
     build:
       context: ./admin-panel
+      # Required, not optional: the Dockerfile is multi-stage and its last stage
+      # is the nginx production image listening on 80. Without this, `up` builds
+      # that one and the port mapping below points at nothing.
+      target: dev
     ports:
       - "${ADMIN_PORT:-5181}:5173"
     environment:
