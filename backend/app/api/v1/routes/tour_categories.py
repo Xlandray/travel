@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
-from app.api.deps import CurrentSuperuser, SessionDep
+from app.api.deps import CurrentSuperuser, OptionalUser, SessionDep
 from app.core.slug import generate_slug
 from app.models.tour import TourCategory
 from app.schemas.pagination import Page
@@ -29,19 +29,32 @@ router = APIRouter()
 )
 async def list_categories(
     session: SessionDep,
+    viewer: OptionalUser,
     page: Annotated[int | None, Query(ge=1)] = None,
     page_size: Annotated[int | None, Query(ge=1, le=100)] = None,
+    include_inactive: Annotated[bool, Query()] = False,
 ) -> list[TourCategoryResponse] | Page[TourCategoryResponse]:
-    """List all active tour categories.
+    """List tour categories; active ones only unless an admin asks otherwise.
 
     When `page`/`page_size` are provided, returns a Refine-compatible
     `Page[TourCategoryResponse]` payload ({data: [...], total}); otherwise
     returns a plain array.
+
+    `include_inactive` exists because deactivating a category used to hide it
+    from the only screen that could bring it back — the admin list reads this
+    same endpoint. It is superuser-only: unpublished categories are not public.
     """
-    base_stmt = select(TourCategory).where(TourCategory.is_active.is_(True))
-    count_stmt = (
-        select(func.count()).select_from(TourCategory).where(TourCategory.is_active.is_(True))
-    )
+    if include_inactive and not (viewer and viewer.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pasif kategorileri listelemek için yönetici yetkisi gerekir.",
+        )
+
+    base_stmt = select(TourCategory)
+    count_stmt = select(func.count()).select_from(TourCategory)
+    if not include_inactive:
+        base_stmt = base_stmt.where(TourCategory.is_active.is_(True))
+        count_stmt = count_stmt.where(TourCategory.is_active.is_(True))
 
     if page is not None and page_size is not None:
         total = (await session.execute(count_stmt)).scalar_one()

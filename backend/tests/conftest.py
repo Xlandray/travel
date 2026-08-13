@@ -22,8 +22,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from app.api.deps import get_current_user
 from app.core.config import get_settings
+from app.core.security import create_access_token
 from app.db.session import get_session
 from app.main import app
 from app.models import User
@@ -115,17 +115,51 @@ async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
 
 
 @pytest.fixture
-async def client(session: AsyncSession) -> AsyncIterator[AsyncClient]:
-    """An HTTP client bound to the app, sharing the test's rolled-back session."""
+async def api(session: AsyncSession) -> AsyncIterator[Callable[[User | None], AsyncClient]]:
+    """Build HTTP clients bound to the app, sharing the test's rolled-back session.
+
+    Each account gets its own client carrying its own bearer token. Nothing about
+    authentication is overridden, which matters for two reasons:
+
+    * A test can use an admin client and a customer client in the same test. The
+      earlier design overrode `get_current_user` globally and handed every
+      fixture the same client object, so whichever fixture happened to be built
+      last silently decided who all the requests came from — an admin request
+      would run as the customer and the test would report the wrong reason for
+      failing.
+    * The real dependency chain runs, so `get_current_superuser`, the token
+      decode and the active-user lookup are all genuinely exercised.
+    """
 
     async def override_get_session() -> AsyncIterator[AsyncSession]:
         yield session
 
     app.dependency_overrides[get_session] = override_get_session
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test/api/v1") as c:
-        yield c
+    built: dict[uuid.UUID | None, AsyncClient] = {}
+
+    def _for(user: User | None) -> AsyncClient:
+        key = user.id if user else None
+        if key not in built:
+            headers = (
+                {"Authorization": f"Bearer {create_access_token(str(user.id))}"} if user else {}
+            )
+            built[key] = AsyncClient(
+                transport=transport, base_url="http://test/api/v1", headers=headers
+            )
+        return built[key]
+
+    yield _for
+
+    for opened in built.values():
+        await opened.aclose()
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(api: Callable[[User | None], AsyncClient]) -> AsyncClient:
+    """An unauthenticated client."""
+    return api(None)
 
 
 async def _make_user(session: AsyncSession, *, is_superuser: bool, label: str) -> User:
@@ -160,21 +194,11 @@ async def other_customer(session: AsyncSession) -> User:
 
 
 @pytest.fixture
-def as_user(client: AsyncClient) -> Callable[[User], AsyncClient]:
-    """Point the shared client at a given account.
-
-    Only `get_current_user` is overridden. `get_current_superuser` depends on it,
-    so the real privilege check still runs and a non-superuser really does get a
-    403 from the admin routes. Overriding both would paper over exactly the
-    authorization the admin tests are there to prove.
-
-    Minting a real token instead would couple every test to the password hashing
-    configuration; the token flow itself is not covered here (see `AGENTS.md`).
-    """
+def as_user(api: Callable[[User | None], AsyncClient]) -> Callable[[User], AsyncClient]:
+    """A client that speaks as the given account. Stable across calls."""
 
     def _login(user: User) -> AsyncClient:
-        app.dependency_overrides[get_current_user] = lambda: user
-        return client
+        return api(user)
 
     return _login
 
@@ -190,6 +214,21 @@ def customer_client(as_user: Callable[[User], AsyncClient], customer: User) -> A
 
 
 DepartureFactory = Callable[..., Awaitable[TourDeparture]]
+
+
+@pytest.fixture
+async def tour(session: AsyncSession) -> Tour:
+    """A bare, active tour for tests that only need something to hang rows off."""
+    row = Tour(
+        title="Test Turu",
+        slug=f"test-turu-{uuid.uuid4().hex[:8]}",
+        description="Fixture tour.",
+        days=3,
+        nights=2,
+    )
+    session.add(row)
+    await session.commit()
+    return row
 
 
 @pytest.fixture

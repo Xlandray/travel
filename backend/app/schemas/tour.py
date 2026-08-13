@@ -3,6 +3,7 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import Schema
 from app.schemas.hotel import TourHotelIn, TourHotelRead
 from app.schemas.route import RouteStopIn, RouteStopRead
 
@@ -93,7 +94,16 @@ class TourUpdate(BaseModel):
     route_stops: list[RouteStopIn] | None = None
 
 
-class TourDepartureUpdate(BaseModel):
+class TourDepartureUpdate(Schema):
+    """Fields a departure can be changed by.
+
+    `tour_id` is deliberately absent: a departure cannot be moved to another
+    tour, because bookings already point at it and their customers bought a
+    specific trip. Extras are forbidden so that sending one is an error rather
+    than a silent no-op — the admin edit form used to post `tour_id` and be
+    quietly ignored, which looked exactly like the move had worked.
+    """
+
     start_date: date | None = None
     end_date: date | None = None
     price: float | None = Field(default=None, ge=0)

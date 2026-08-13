@@ -26,8 +26,11 @@ export const dataProvider: DataProvider = {
   }: GetListParams): Promise<GetListResponse<TData>> => {
     const current = pagination?.currentPage ?? 1;
     const pageSize = pagination?.pageSize ?? 25;
+    // Bu panel yalnizca yoneticiler icin; listelerde pasif kayitlar da gorunmeli,
+    // yoksa bir kaydi pasife almak onu geri alabilecek tek ekrandan gizliyor.
+    // Bu parametreyi desteklemeyen uclar onu yok sayar.
     const response = await axiosInstance.get<PageResponse<TData>>(`/${resource}`, {
-      params: { page: current, page_size: pageSize },
+      params: { page: current, page_size: pageSize, include_inactive: true },
     });
     return { data: response.data.data, total: response.data.total };
   },

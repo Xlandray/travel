@@ -3,26 +3,35 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import Field, model_validator
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentSuperuser, SessionDep
 from app.models.booking import Booking
 from app.models.tour import Tour, TourDeparture
+from app.schemas.base import Schema
 from app.schemas.pagination import Page
 from app.schemas.tour import TourDepartureResponse, TourDepartureUpdate
 
 router = APIRouter()
 
 
-class TourDepartureCreate(BaseModel):
+class TourDepartureCreate(Schema):
     tour_id: uuid.UUID
     start_date: date
     end_date: date
     price: float = Field(..., ge=0)
     total_quota: int = Field(..., ge=1)
-    available_seats: int | None = None
+    available_seats: int | None = Field(default=None, ge=0)
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def _coherent(self) -> "TourDepartureCreate":
+        if self.end_date < self.start_date:
+            raise ValueError("Sefer bitiş tarihi başlangıç tarihinden önce olamaz.")
+        if self.available_seats is not None and self.available_seats > self.total_quota:
+            raise ValueError("Satıştaki koltuk sayısı otobüs kapasitesinden büyük olamaz.")
+        return self
 
 
 @router.get("", response_model=list[TourDepartureResponse] | Page[TourDepartureResponse])
@@ -131,7 +140,13 @@ async def update_tour_departure(
     session: SessionDep,
     _: CurrentSuperuser,
 ) -> TourDepartureResponse:
-    """Partially update a tour departure (dates, price, quota, active flag)."""
+    """Partially update a tour departure (dates, price, quota, active flag).
+
+    Resizing the bus keeps the seats that are already sold. `total_quota` and
+    `available_seats` are two halves of one ledger — the difference between them
+    is what passengers are holding — so writing either one blindly is how a
+    departure ends up with more confirmed passengers than seats.
+    """
     departure = await session.get(TourDeparture, departure_id)
     if not departure:
         raise HTTPException(
@@ -140,6 +155,35 @@ async def update_tour_departure(
         )
 
     data = departure_in.model_dump(exclude_unset=True)
+
+    start = data.get("start_date", departure.start_date)
+    end = data.get("end_date", departure.end_date)
+    if end < start:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Sefer bitiş tarihi başlangıç tarihinden önce olamaz.",
+        )
+
+    held = departure.total_quota - departure.available_seats
+
+    if "total_quota" in data:
+        if data["total_quota"] < held:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Kapasite satılmış koltuk sayısının altına indirilemez (satılan: {held})."
+                ),
+            )
+        # Kapasite degisiminde satilan koltuklar yerinde kalir, fark satisa acilir.
+        data.setdefault("available_seats", data["total_quota"] - held)
+
+    quota = data.get("total_quota", departure.total_quota)
+    if data.get("available_seats", departure.available_seats) > quota:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Satıştaki koltuk sayısı otobüs kapasitesinden büyük olamaz.",
+        )
+
     for field, value in data.items():
         setattr(departure, field, value)
 

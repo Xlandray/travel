@@ -12,7 +12,8 @@ interface TourOption {
 }
 
 interface FormValues {
-  tour_id: string;
+  // Salt okunur: forma yüklenir, geri gönderilmez.
+  tour_id?: string;
   dateRange?: [Dayjs, Dayjs];
   price: number;
   total_quota: number;
@@ -44,7 +45,7 @@ export const TourDepartureEdit = () => {
   };
 
   const handleOnFinish = (values: FormValues) => {
-    const { tour_id, dateRange, price, total_quota, available_seats, is_active } = values;
+    const { dateRange, price, total_quota, available_seats, is_active } = values;
     const startDate = dateRange?.[0]?.format("YYYY-MM-DD");
     const endDate = dateRange?.[1]?.format("YYYY-MM-DD");
 
@@ -52,8 +53,10 @@ export const TourDepartureEdit = () => {
       return;
     }
 
+    // tour_id gonderilmiyor: bir sefer baska bir tura tasinamaz, cunku ona
+    // bagli rezervasyonlar belirli bir geziyi satin aldi. Alan formda
+    // gosteriliyor ama devre disi.
     const submitData = {
-      tour_id,
       start_date: startDate,
       end_date: endDate,
       price,
@@ -80,11 +83,11 @@ export const TourDepartureEdit = () => {
         onFieldsChange={onFieldsChange}
       >
         <Form.Item
-          label="Tur Seçin"
+          label="Ait Olduğu Tur"
           name="tour_id"
-          rules={[{ required: true, message: "Lütfen bir tur seçin." }]}
+          tooltip="Sefer başka bir tura taşınamaz; taşımak için seferi silip yenisini açın."
         >
-          <Select allowClear placeholder="Seferin ait olduğu turu seçin">
+          <Select disabled placeholder="Seferin ait olduğu tur">
             {tours.map((t) => (
               <Select.Option key={t.id} value={t.id}>
                 {t.title}

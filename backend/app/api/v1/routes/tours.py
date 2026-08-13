@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import CurrentSuperuser, SessionDep
+from app.api.deps import CurrentSuperuser, OptionalUser, SessionDep
 from app.core.slug import generate_slug
 from app.models.booking import Booking
 from app.models.hotel import TourHotel
@@ -99,20 +99,36 @@ DEFAULT_BOARDING_POINTS: list[BoardingPointResponse] = [
 )
 async def list_tours(
     session: SessionDep,
+    viewer: OptionalUser,
     boarding_point: Annotated[str | None, Query(description="Kalkış noktası filtresi")] = None,
     search_date: Annotated[date_type | None, Query(description="Kalkış tarihi filtresi")] = None,
     category_id: Annotated[uuid.UUID | None, Query(description="Kategori filtresi")] = None,
     page: Annotated[int | None, Query(ge=1)] = None,
     page_size: Annotated[int | None, Query(ge=1, le=100)] = None,
+    include_inactive: Annotated[bool, Query()] = False,
 ) -> list[TourResponse] | Page[TourResponse]:
-    """List all active tours with pricing, departures, categories, and gallery.
+    """List tours with pricing, departures, categories and gallery.
 
     When `page`/`page_size` are provided, returns a Refine-compatible
     `Page[TourResponse]` payload ({data: [...], total}); otherwise returns a
     plain array (customer-facing site contract).
+
+    Only active tours are listed unless a superuser passes `include_inactive`.
+    The admin panel reads this same endpoint, and without the flag an unpublished
+    tour is invisible on the only screen that could publish it again. Unpublished
+    tours stay out of public responses.
     """
-    base_stmt = select(Tour).where(Tour.is_active.is_(True))
-    count_stmt = select(func.count()).select_from(Tour).where(Tour.is_active.is_(True))
+    if include_inactive and not (viewer and viewer.is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pasif turları listelemek için yönetici yetkisi gerekir.",
+        )
+
+    base_stmt = select(Tour)
+    count_stmt = select(func.count()).select_from(Tour)
+    if not include_inactive:
+        base_stmt = base_stmt.where(Tour.is_active.is_(True))
+        count_stmt = count_stmt.where(Tour.is_active.is_(True))
 
     if boarding_point:
         base_stmt = base_stmt.join(Tour.boarding_points).where(BoardingPoint.name == boarding_point)
