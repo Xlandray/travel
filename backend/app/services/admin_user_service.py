@@ -43,6 +43,22 @@ class AdminUserService:
 
         for field, value in changes.items():
             setattr(user, field, value)
+
+        # Deactivating already blocks requests, but only while the flag is off.
+        # Without this bump, reactivating an account later would bring back into
+        # service every token that existed before it was suspended — including
+        # whichever one caused the suspension.
+        if changes.get("is_active") is False:
+            user.token_version = User.token_version + 1
+
+        await self._session.commit()
+        await self._session.refresh(user)
+        return user
+
+    async def revoke_sessions(self, user_id: uuid.UUID) -> User:
+        """Sign a user out everywhere without taking their account away."""
+        user = await self.get(user_id)
+        user.token_version = User.token_version + 1
         await self._session.commit()
         await self._session.refresh(user)
         return user

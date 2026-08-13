@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String, text
+from sqlalchemy import Boolean, Integer, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +27,12 @@ class User(TimestampMixin, Base):
     is_superuser: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    # Access tokens are self-contained: once signed and handed out, nothing can
+    # take one back before it expires. This counter is the recall mechanism —
+    # every token carries the version it was minted at, every authenticated
+    # request compares it against this column, and bumping the column makes
+    # every token issued so far stop working at once.
+    token_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
 
     contents: Mapped[list["Content"]] = relationship(
         back_populates="author",

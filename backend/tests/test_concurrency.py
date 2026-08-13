@@ -31,6 +31,7 @@ from app.models import User
 from app.models.booking import Booking
 from app.models.payment import Payment
 from app.models.tour import Tour, TourDeparture
+from app.services.user_service import UserService
 
 SessionFactory = async_sessionmaker[AsyncSession]
 
@@ -109,7 +110,7 @@ async def world(live_sessions: SessionFactory) -> AsyncIterator[World]:
             departure_id=departure.id,
             tour_id=tour.id,
             user_ids=[u.id for u in users],
-            tokens=[create_access_token(str(u.id)) for u in users],
+            tokens=[create_access_token(str(u.id), u.token_version) for u in users],
             quota=quota,
         )
 
@@ -449,7 +450,7 @@ class TestRealTokenAuth:
 
     async def test_a_token_for_a_deleted_user_is_rejected(self, live_client: AsyncClient) -> None:
         response = await live_client.get(
-            "/bookings/me", headers=auth(create_access_token(str(uuid.uuid4())))
+            "/bookings/me", headers=auth(create_access_token(str(uuid.uuid4()), 0))
         )
         assert response.status_code == 401
 
@@ -458,3 +459,32 @@ class TestRealTokenAuth:
     ) -> None:
         response = await live_client.get("/admin/bookings", headers=auth(world.tokens[1]))
         assert response.status_code == 403
+
+    async def test_two_revocations_that_overlap_do_not_cancel_each_other_out(
+        self, live_sessions: SessionFactory, world: World
+    ) -> None:
+        """Both bumps have to count, even when both read the row first.
+
+        This is the lost-update shape: two requests load the account, then each
+        raises the version. Written as read-modify-write both compute the same
+        new number, so the second revocation writes what the first already
+        wrote — and a token minted in between the two stays valid even though
+        somebody asked twice for it to die. Loading in both sessions before
+        either commits is what separates the two implementations, so it is done
+        deliberately rather than left to scheduling.
+        """
+        user_id = world.user_ids[1]
+
+        async with live_sessions() as first, live_sessions() as second:
+            mine = await first.get(User, user_id)
+            theirs = await second.get(User, user_id)
+            assert mine is not None and theirs is not None
+            before = mine.token_version
+
+            await UserService(first).revoke_tokens(mine)
+            await UserService(second).revoke_tokens(theirs)
+
+        async with live_sessions() as check:
+            after = await check.scalar(select(User.token_version).where(User.id == user_id))
+
+        assert after == before + 2, f"two revocations only moved the version to {after}"

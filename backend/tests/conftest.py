@@ -142,7 +142,9 @@ async def api(session: AsyncSession) -> AsyncIterator[Callable[[User | None], As
         key = user.id if user else None
         if key not in built:
             headers = (
-                {"Authorization": f"Bearer {create_access_token(str(user.id))}"} if user else {}
+                {"Authorization": f"Bearer {create_access_token(str(user.id), user.token_version)}"}
+                if user
+                else {}
             )
             built[key] = AsyncClient(
                 transport=transport, base_url="http://test/api/v1", headers=headers
@@ -165,7 +167,10 @@ def client(api: Callable[[User | None], AsyncClient]) -> AsyncClient:
 async def _make_user(session: AsyncSession, *, is_superuser: bool, label: str) -> User:
     user = User(
         email=f"{label}-{uuid.uuid4().hex[:8]}@example.com",
-        hashed_password="not-used-tests-override-auth",
+        # Fixture accounts get a minted token rather than logging in, so this is
+        # never verified against anything. Tests that need a real password go
+        # through /users and /auth/login instead.
+        hashed_password="not-a-hash-fixture-accounts-do-not-log-in",
         full_name=f"Test {label.title()}",
         is_active=True,
         is_superuser=is_superuser,

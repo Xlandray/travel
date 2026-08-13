@@ -54,6 +54,21 @@ async def update_user(
         raise conflict(error) from error
 
 
+@router.post("/users/{user_id}/revoke-sessions", response_model=UserRead)
+async def revoke_user_sessions(user_id: uuid.UUID, session: SessionDep) -> UserRead:
+    """Invalidate every access token this user holds, leaving the account usable.
+
+    For a leaked token: suspending the account would work but locks the person
+    out of their own; this only ends the sessions, so they log in again and
+    whoever has the stolen copy does not.
+    """
+    try:
+        user = await AdminUserService(session).revoke_sessions(user_id)
+        return UserRead.model_validate(user)
+    except ResourceNotFoundError as error:
+        raise not_found(error) from error
+
+
 @router.get("/users/{user_id}", response_model=UserRead)
 async def get_user(user_id: uuid.UUID, session: SessionDep) -> UserRead:
     try:

@@ -1,7 +1,12 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
 import { API_BASE } from "./preflight";
-import { adminToken, seedTourWithDeparture, type SeededDeparture } from "./seed";
+import {
+  adminToken,
+  registerAndLogIn,
+  seedTourWithDeparture,
+  type SeededDeparture,
+} from "./seed";
 
 /**
  * The one journey nobody had ever driven end to end.
@@ -16,35 +21,11 @@ import { adminToken, seedTourWithDeparture, type SeededDeparture } from "./seed"
  * cannot be submitted on a phone is a booking form that does not work.
  */
 
-function unique(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 async function seatsLeft(api: APIRequestContext, departureId: string): Promise<number> {
   const response = await api.get(`${API_BASE}/tour-departures/${departureId}`);
   expect(response.ok(), "could not read the departure back").toBeTruthy();
   const body = (await response.json()) as { available_seats: number };
   return body.available_seats;
-}
-
-/** Sign a brand new customer up through the forms and leave them logged in. */
-async function registerAndLogIn(page: Page): Promise<string> {
-  const email = `${unique("musteri")}@example.com`;
-  const password = unique("gizli-parola");
-
-  await page.goto("/auth/register");
-  await page.locator('input[name="full_name"]').fill("Test Müşteri");
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await page.locator('button[type="submit"]').click();
-  await expect(page).toHaveURL(/\/auth\/login/);
-
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await page.locator('button[type="submit"]').click();
-  await expect(page).not.toHaveURL(/\/auth\/login/);
-
-  return email;
 }
 
 /** The card form is theatre — nothing is sent to the API — but it is required. */

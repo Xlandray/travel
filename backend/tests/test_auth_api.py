@@ -1,8 +1,8 @@
-"""Registration, login and password reset.
+"""Registration, login, password reset and session revocation.
 
-The rest of the suite overrides `get_current_user`, so nothing there touches
-password hashing, token minting or the reset flow. These tests go through the
-real endpoints instead.
+The rest of the suite mints tokens for fixture accounts directly, so nothing
+there touches password hashing or the login and reset flows. These tests go
+through the real endpoints instead.
 
 The reset token is read out of the mock email the way a user would read it out
 of their inbox — `send_email` logs the message body in development — so the
@@ -12,12 +12,15 @@ tests do not depend on how the token happens to be minted.
 import logging
 import re
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import jwt
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.models import User
 
 # Generated rather than written out: a hard-coded credential-shaped literal is
@@ -309,3 +312,166 @@ class TestResetPassword:
         )
         assert response.status_code == 400
         assert (await login(client, email, password=PASSWORD)).status_code == 200
+
+
+def bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+class TestSessionRevocation:
+    """Taking a token back.
+
+    Access tokens are signed blobs the server keeps no record of, so until now
+    a leaked one stayed usable for its whole lifetime and there was nothing
+    anybody — the owner or an administrator — could do about it. These tests
+    pin down that it can now be recalled, and that recalling it does not take
+    the account away with it.
+    """
+
+    async def test_a_token_is_dead_after_logging_out_everywhere(self, client: AsyncClient) -> None:
+        email = unique_email()
+        await register(client, email)
+        token = (await login(client, email)).json()["access_token"]
+        assert (await client.get("/users/me", headers=bearer(token))).status_code == 200
+
+        response = await client.post("/auth/logout-all", headers=bearer(token))
+        assert response.status_code == 204
+
+        assert (await client.get("/users/me", headers=bearer(token))).status_code == 401
+
+    async def test_every_device_is_signed_out_not_just_the_caller(
+        self, client: AsyncClient
+    ) -> None:
+        """The point of the endpoint: the leaked copy is the one you cannot reach."""
+        email = unique_email()
+        await register(client, email)
+        phone = (await login(client, email)).json()["access_token"]
+        laptop = (await login(client, email)).json()["access_token"]
+        assert phone != laptop
+
+        assert (await client.post("/auth/logout-all", headers=bearer(phone))).status_code == 204
+
+        assert (await client.get("/users/me", headers=bearer(laptop))).status_code == 401
+
+    async def test_the_account_still_works_afterwards(self, client: AsyncClient) -> None:
+        """Revocation ends sessions; it must not lock the owner out."""
+        email = unique_email()
+        await register(client, email)
+        old = (await login(client, email)).json()["access_token"]
+        await client.post("/auth/logout-all", headers=bearer(old))
+
+        fresh = await login(client, email)
+        assert fresh.status_code == 200
+        new_token = fresh.json()["access_token"]
+        assert (await client.get("/users/me", headers=bearer(new_token))).status_code == 200
+
+    async def test_one_account_signing_out_leaves_others_alone(self, client: AsyncClient) -> None:
+        mine, theirs = unique_email(), unique_email()
+        await register(client, mine)
+        await register(client, theirs)
+        my_token = (await login(client, mine)).json()["access_token"]
+        their_token = (await login(client, theirs)).json()["access_token"]
+
+        assert (await client.post("/auth/logout-all", headers=bearer(my_token))).status_code == 204
+
+        assert (await client.get("/users/me", headers=bearer(their_token))).status_code == 200
+
+    async def test_signing_out_everywhere_requires_a_token(self, client: AsyncClient) -> None:
+        assert (await client.post("/auth/logout-all")).status_code == 401
+
+    async def test_a_token_with_no_version_claim_is_refused(
+        self, client: AsyncClient, customer: User
+    ) -> None:
+        """Tokens minted before revocation existed cannot be exempt from it.
+
+        Treating a missing claim as "matches any version" would be the easy way
+        to avoid signing everyone out on deploy, and it would leave precisely
+        the tokens we cannot recall valid forever.
+        """
+        settings = get_settings()
+        legacy = jwt.encode(
+            {
+                "sub": str(customer.id),
+                "type": "access",
+                "exp": datetime.now(UTC) + timedelta(minutes=5),
+            },
+            settings.jwt_secret_key.get_secret_value(),
+            algorithm=settings.jwt_algorithm,
+        )
+
+        assert (await client.get("/users/me", headers=bearer(legacy))).status_code == 401
+
+    async def test_resetting_the_password_ends_existing_sessions(
+        self, client: AsyncClient, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """The takeover case.
+
+        Somebody with a stolen token is already signed in. The owner notices,
+        resets their password — and if the old session survived that, the reset
+        would have accomplished nothing beyond changing how the thief would
+        have logged in had they needed to.
+        """
+        email = unique_email()
+        await register(client, email)
+        stolen = (await login(client, email)).json()["access_token"]
+        assert (await client.get("/users/me", headers=bearer(stolen))).status_code == 200
+
+        token = await reset_token_from_email(client, email, caplog)
+        reset = await client.post(
+            "/auth/reset-password", json={"token": token, "new_password": NEW_PASSWORD}
+        )
+        assert reset.status_code == 200
+
+        assert (await client.get("/users/me", headers=bearer(stolen))).status_code == 401
+
+    async def test_an_admin_can_sign_a_user_out_without_suspending_them(
+        self, client: AsyncClient, admin_client: AsyncClient
+    ) -> None:
+        email = unique_email()
+        created = await register(client, email)
+        token = (await login(client, email)).json()["access_token"]
+
+        response = await admin_client.post(f"/admin/users/{created['id']}/revoke-sessions")
+        assert response.status_code == 200, response.text
+        assert response.json()["is_active"] is True
+
+        assert (await client.get("/users/me", headers=bearer(token))).status_code == 401
+        assert (await login(client, email)).status_code == 200
+
+    async def test_revoking_sessions_needs_administrator_rights(
+        self, client: AsyncClient, customer_client: AsyncClient
+    ) -> None:
+        created = await register(client, unique_email())
+        response = await customer_client.post(f"/admin/users/{created['id']}/revoke-sessions")
+        assert response.status_code == 403
+
+    async def test_revoking_sessions_for_an_unknown_user_is_a_404(
+        self, admin_client: AsyncClient
+    ) -> None:
+        response = await admin_client.post(f"/admin/users/{uuid.uuid4()}/revoke-sessions")
+        assert response.status_code == 404
+
+    async def test_reactivating_an_account_does_not_revive_its_old_tokens(
+        self, client: AsyncClient, admin_client: AsyncClient
+    ) -> None:
+        """Suspending somebody has to be more than a pause.
+
+        `is_active` is read fresh on every request, so a suspended account's
+        tokens bounce — but they come straight back to life the moment the
+        account is re-enabled, which would hand access back to whoever caused
+        the suspension in the first place.
+        """
+        email = unique_email()
+        created = await register(client, email)
+        token = (await login(client, email)).json()["access_token"]
+
+        suspend = await admin_client.patch(
+            f"/admin/users/{created['id']}", json={"is_active": False}
+        )
+        assert suspend.status_code == 200, suspend.text
+        restore = await admin_client.patch(
+            f"/admin/users/{created['id']}", json={"is_active": True}
+        )
+        assert restore.status_code == 200, restore.text
+
+        assert (await client.get("/users/me", headers=bearer(token))).status_code == 401

@@ -54,3 +54,22 @@ class UserService:
         if user is None or not user.is_active:
             raise InvalidCredentialsError("User is not available.")
         return user
+
+    async def get_authenticated_user(self, user_id: uuid.UUID, token_version: int) -> User:
+        """The account a session token belongs to, if that token is still current."""
+        user = await self.get_active_user(user_id)
+        if user.token_version != token_version:
+            raise InvalidCredentialsError("This session has been revoked.")
+        return user
+
+    async def revoke_tokens(self, user: User) -> User:
+        """Invalidate every access token already issued for this account.
+
+        The bump is written as a SQL expression rather than read-modify-write so
+        two concurrent revocations cannot both land on the same new version and
+        leave a token minted in between still valid.
+        """
+        user.token_version = User.token_version + 1
+        await self._session.commit()
+        await self._session.refresh(user)
+        return user

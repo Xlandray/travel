@@ -1,9 +1,40 @@
-import type { APIRequestContext } from "@playwright/test";
+import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 import { API_BASE } from "./preflight";
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "admin@armonitex.com.tr";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "Armonitex12345!";
+
+export interface Customer {
+  email: string;
+  password: string;
+}
+
+function unique(prefix: string): string {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** Sign a brand new customer up through the forms and leave them logged in. */
+export async function registerAndLogIn(page: Page): Promise<Customer> {
+  const customer = {
+    email: `${unique("musteri")}@example.com`,
+    password: unique("gizli-parola"),
+  };
+
+  await page.goto("/auth/register");
+  await page.locator('input[name="full_name"]').fill("Test Müşteri");
+  await page.locator('input[name="email"]').fill(customer.email);
+  await page.locator('input[name="password"]').fill(customer.password);
+  await page.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/\/auth\/login/);
+
+  await page.locator('input[name="email"]').fill(customer.email);
+  await page.locator('input[name="password"]').fill(customer.password);
+  await page.locator('button[type="submit"]').click();
+  await expect(page).not.toHaveURL(/\/auth\/login/);
+
+  return customer;
+}
 
 export interface SeededDeparture {
   tourTitle: string;

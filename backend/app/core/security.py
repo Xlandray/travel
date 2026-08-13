@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -26,8 +27,20 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def _encode(payload: dict[str, Any], token_type: str, lifetime: timedelta) -> str:
+    """Sign a token, stamped with an expiry, a type and a unique id.
+
+    The `jti` is what keeps two tokens apart. Without it the claims for two
+    logins by the same account in the same second are identical, so the signed
+    strings are too — one session cannot be spoken about, logged or reasoned
+    about separately from another.
+    """
     settings = get_settings()
-    body = {**payload, "exp": datetime.now(UTC) + lifetime, "type": token_type}
+    body = {
+        **payload,
+        "exp": datetime.now(UTC) + lifetime,
+        "type": token_type,
+        "jti": uuid.uuid4().hex,
+    }
     return jwt.encode(
         body,
         settings.jwt_secret_key.get_secret_value(),
@@ -54,21 +67,36 @@ def _decode(token: str, token_type: str) -> dict[str, Any]:
     return payload
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, token_version: int) -> str:
+    """Mint a session token stamped with the account's current token version.
+
+    The version is what makes the token revocable — see `User.token_version`.
+    It is required rather than defaulted so that a new call site cannot quietly
+    mint an unrevokable token by forgetting to pass it.
+    """
     settings = get_settings()
     return _encode(
-        {"sub": subject},
+        {"sub": subject, "tv": token_version},
         ACCESS_TOKEN_TYPE,
         timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
 
 
-def decode_access_token(token: str) -> str:
+def decode_access_token(token: str) -> tuple[str, int]:
+    """Return (subject, token version); raises `jwt.InvalidTokenError` if malformed.
+
+    A token minted before revocation existed has no `tv` claim and is refused,
+    so deploying this signs everyone out once. That is the safe direction: the
+    alternative is treating a missing claim as "any version", which would leave
+    exactly the old tokens we want to be able to recall permanently valid.
+    """
     payload = _decode(token, ACCESS_TOKEN_TYPE)
     subject = payload.get("sub")
-    if not isinstance(subject, str):
+    version = payload.get("tv")
+    # bool is a subclass of int, so `True` would otherwise pass as version 1.
+    if not isinstance(subject, str) or not isinstance(version, int) or isinstance(version, bool):
         raise jwt.InvalidTokenError("Invalid access token payload.")
-    return subject
+    return subject, version
 
 
 def password_reset_fingerprint(hashed_password: str) -> str:

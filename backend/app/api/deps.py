@@ -26,9 +26,9 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        subject = decode_access_token(token)
+        subject, token_version = decode_access_token(token)
         user_id = uuid.UUID(subject)
-        return await UserService(session).get_active_user(user_id)
+        return await UserService(session).get_authenticated_user(user_id, token_version)
     except (jwt.PyJWTError, ValueError, InvalidCredentialsError) as error:
         raise credentials_error from error
 
@@ -52,8 +52,8 @@ async def get_optional_user(
     if not token:
         return None
     try:
-        subject = decode_access_token(token)
-        return await UserService(session).get_active_user(uuid.UUID(subject))
+        subject, token_version = decode_access_token(token)
+        return await UserService(session).get_authenticated_user(uuid.UUID(subject), token_version)
     except (jwt.PyJWTError, ValueError, InvalidCredentialsError):
         return None
 

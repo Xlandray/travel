@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr, Field
 
-from app.api.deps import SessionDep
+from app.api.deps import CurrentUser, SessionDep
 from app.core.email import send_email
 from app.core.security import (
     create_access_token,
@@ -16,6 +16,7 @@ from app.core.security import (
     password_reset_fingerprint,
 )
 from app.domain.exceptions import InvalidCredentialsError
+from app.models import User
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.base import Schema
 from app.services.user_service import UserService
@@ -47,7 +48,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         ) from error
 
-    return Token(access_token=create_access_token(str(user.id)))
+    return Token(access_token=create_access_token(str(user.id), user.token_version))
 
 
 @router.post("/login", response_model=Token, summary="JSON Giriş Endpoint'i")
@@ -65,7 +66,7 @@ async def login_json(
             headers={"WWW-Authenticate": "Bearer"},
         ) from error
 
-    return Token(access_token=create_access_token(str(user.id)))
+    return Token(access_token=create_access_token(str(user.id), user.token_version))
 
 
 @router.post("/forgot-password", summary="Şifremi Unuttum")
@@ -125,7 +126,26 @@ async def reset_password(
     if fingerprint != password_reset_fingerprint(user.hashed_password):
         raise invalid_link
 
+    # Somebody resetting a password may well be doing it because their account
+    # was taken over, so the sessions the attacker holds have to die with the
+    # old password — otherwise the reset only changes how they log in next time.
     user.hashed_password = hash_password(payload.new_password)
+    user.token_version = User.token_version + 1
     await session.commit()
 
     return {"message": "Şifreniz başarıyla güncellendi."}
+
+
+@router.post(
+    "/logout-all",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Tüm Oturumları Kapat",
+)
+async def logout_all_sessions(current_user: CurrentUser, session: SessionDep) -> None:
+    """Revoke every session token for the signed-in account, including this one.
+
+    Signing out normally just forgets the token on the client, which does
+    nothing about a copy somebody else has. This is the endpoint to hit when a
+    token may have leaked; the caller has to log in again afterwards.
+    """
+    await UserService(session).revoke_tokens(current_user)

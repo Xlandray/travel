@@ -65,6 +65,7 @@ function MyBookingsContent() {
   const [bookings, setBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const getToken = () => (typeof window !== "undefined" ? localStorage.getItem("token") : null);
@@ -148,6 +149,35 @@ function MyBookingsContent() {
     }
   };
 
+  const handleSignOutEverywhere = async () => {
+    const token = getToken();
+    if (!token) {
+      redirectToLogin();
+      return;
+    }
+
+    setSigningOut(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`${getApiBase()}/auth/logout-all`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // 401 means the sessions were already gone, which is the outcome asked
+      // for — either way this device's token is no longer worth keeping.
+      if (!res.ok && res.status !== 401) {
+        setErrorMessage("Oturumlar kapatılamadı. Lütfen tekrar deneyin.");
+        return;
+      }
+      if (typeof window !== "undefined") localStorage.removeItem("token");
+      redirectToLogin();
+    } catch {
+      setErrorMessage("Sunucuya bağlanılamadı. Oturumlar kapatılamadı.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const formatDate = (value?: string | null) => {
     if (!value) return "—";
     const [year, month, day] = value.slice(0, 10).split("-");
@@ -158,14 +188,30 @@ function MyBookingsContent() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 w-full space-y-8">
-      <div>
-        <span className="text-xs font-bold text-brand-token uppercase tracking-widest">
-          {t("booking.modal_subtitle")}
-        </span>
-        <h1 className="text-3xl font-extrabold text-main-token mt-1">Rezervasyonlarım</h1>
-        <p className="text-subtle-token text-sm mt-1">
-          Geçmiş ve aktif tur rezervasyonlarınızı buradan takip edebilir ve iptal edebilirsiniz.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <span className="text-xs font-bold text-brand-token uppercase tracking-widest">
+            {t("booking.modal_subtitle")}
+          </span>
+          <h1 className="text-3xl font-extrabold text-main-token mt-1">Rezervasyonlarım</h1>
+          <p className="text-subtle-token text-sm mt-1">
+            Geçmiş ve aktif tur rezervasyonlarınızı buradan takip edebilir ve iptal edebilirsiniz.
+          </p>
+        </div>
+
+        <div className="sm:text-right">
+          <button
+            type="button"
+            onClick={handleSignOutEverywhere}
+            disabled={signingOut}
+            className="btn-danger-token text-sm disabled:opacity-50"
+          >
+            {signingOut ? "Kapatılıyor..." : "Tüm Cihazlarda Oturumu Kapat"}
+          </button>
+          <p className="text-xs text-muted-token mt-1 max-w-xs">
+            Hesabınıza başka bir cihazdan girilmiş olabileceğinden şüpheleniyorsanız kullanın.
+          </p>
+        </div>
       </div>
 
       {errorMessage && (
