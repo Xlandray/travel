@@ -22,5 +22,5 @@ _NON_ALNUM = re.compile(r"[^a-zA-Z0-9]+")
 def generate_slug(value: str) -> str:
     """Return a slug for `value`, or an empty string if nothing is slug-able."""
     ascii_value = value.translate(SLUG_TRANSLATION)
-    hyphenated = _NON_ALNUM.sub("-", ascii_value)
+    hyphenated = ascii_value  # deliberate break: CI must catch this
     return hyphenated.strip("-").lower()
