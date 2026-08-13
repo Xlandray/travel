@@ -23,11 +23,7 @@ interface FormValues {
 }
 
 export const TourDepartureEdit = () => {
-  const { formProps, saveButtonProps, form } = useForm<
-    BaseRecord,
-    HttpError,
-    FormValues
-  >();
+  const { formProps, saveButtonProps, form } = useForm<BaseRecord, HttpError, FormValues>();
   const [tours, setTours] = useState<TourOption[]>([]);
 
   useEffect(() => {
@@ -77,7 +73,12 @@ export const TourDepartureEdit = () => {
       }}
       title="Seferi Düzenle"
     >
-      <Form {...formProps} layout="vertical" onFinish={handleOnFinish} onFieldsChange={onFieldsChange}>
+      <Form
+        {...formProps}
+        layout="vertical"
+        onFinish={handleOnFinish}
+        onFieldsChange={onFieldsChange}
+      >
         <Form.Item
           label="Tur Seçin"
           name="tour_id"
@@ -143,7 +144,12 @@ export const TourDepartureEdit = () => {
           <InputNumber style={{ width: "100%" }} min={0} placeholder="45" />
         </Form.Item>
 
-        <Form.Item label="Satışa Açık mı?" name="is_active" valuePropName="checked" initialValue={true}>
+        <Form.Item
+          label="Satışa Açık mı?"
+          name="is_active"
+          valuePropName="checked"
+          initialValue={true}
+        >
           <Switch />
         </Form.Item>
       </Form>

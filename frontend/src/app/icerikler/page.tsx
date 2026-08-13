@@ -5,7 +5,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Haberler & Projeler",
-  description: "Armonitex tarafından tamamlanan dijital baskı projeleri, hammadde teknolojileri ve sektör haberleri.",
+  description:
+    "Armonitex tarafından tamamlanan dijital baskı projeleri, hammadde teknolojileri ve sektör haberleri.",
   alternates: {
     canonical: "/icerikler",
   },
@@ -53,9 +54,12 @@ export default async function ContentsListingPage() {
 
       <section className="bg-navy-token text-white-token py-16 px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-4xl mx-auto space-y-4">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Haberler &amp; Tamamlanan Projeler</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Haberler &amp; Tamamlanan Projeler
+          </h1>
           <p className="text-cyan-100/90 text-base max-w-xl mx-auto">
-            1998&apos;den bu yana imza attığımız büyük ölçekli açıkhava baskı projeleri ve sektör gelişmeleri.
+            1998&apos;den bu yana imza attığımız büyük ölçekli açıkhava baskı projeleri ve sektör
+            gelişmeleri.
           </p>
         </div>
       </section>
@@ -64,8 +68,12 @@ export default async function ContentsListingPage() {
         {contents.length === 0 ? (
           <div className="bg-white-token p-12 rounded-2xl border-2 border-cyan-token text-center space-y-3">
             <div className="text-4xl">📚</div>
-            <h2 className="text-lg font-semibold text-main-token">Henüz yayınlanmış bir haber bulunmuyor.</h2>
-            <p className="text-sm text-subtle-token">Çok yakında yeni proje duyurularımız eklenecektir.</p>
+            <h2 className="text-lg font-semibold text-main-token">
+              Henüz yayınlanmış bir haber bulunmuyor.
+            </h2>
+            <p className="text-sm text-subtle-token">
+              Çok yakında yeni proje duyurularımız eklenecektir.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

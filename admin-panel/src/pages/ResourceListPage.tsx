@@ -32,11 +32,7 @@ function formatPrice(value: unknown): string {
 }
 
 function StatusTag({ active }: { active: unknown }) {
-  return active ? (
-    <Tag color="success">Aktif</Tag>
-  ) : (
-    <Tag color="error">Pasif</Tag>
-  );
+  return active ? <Tag color="success">Aktif</Tag> : <Tag color="error">Pasif</Tag>;
 }
 
 function thumbnail(url: unknown, alt = "Görsel") {
@@ -106,7 +102,8 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
       width: 110,
       render: (_, record) => (
         <span>
-          <strong>{String(record.available_seats ?? "-")}</strong> / {String(record.total_quota ?? "-")}
+          <strong>{String(record.available_seats ?? "-")}</strong> /{" "}
+          {String(record.total_quota ?? "-")}
         </span>
       ),
     },
@@ -118,14 +115,18 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
   ],
   "tour-categories": [
     { title: "Ad", dataIndex: "name", render: (v) => <strong>{String(v)}</strong> },
-    { title: "Slug", dataIndex: "slug", render: (v) => <Typography.Text code>{String(v)}</Typography.Text> },
+    {
+      title: "Slug",
+      dataIndex: "slug",
+      render: (v) => <Typography.Text code>{String(v)}</Typography.Text>,
+    },
     {
       title: "Durum",
       width: 90,
       render: (_, record) => <StatusTag active={record.is_active} />,
     },
   ],
-  "hotels": [
+  hotels: [
     { title: "Ad", dataIndex: "name", render: (v) => <strong>{String(v)}</strong> },
     { title: "Şehir", dataIndex: "city", width: 120, render: (v) => <Tag>{String(v)}</Tag> },
     {
@@ -159,7 +160,11 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
   ],
   "admin/contents": [
     { title: "Başlık", dataIndex: "title", render: (v) => <strong>{String(v ?? "—")}</strong> },
-    { title: "Slug", dataIndex: "slug", render: (v) => <Typography.Text code>{String(v ?? "—")}</Typography.Text> },
+    {
+      title: "Slug",
+      dataIndex: "slug",
+      render: (v) => <Typography.Text code>{String(v ?? "—")}</Typography.Text>,
+    },
     {
       title: "Durum",
       width: 90,
@@ -168,7 +173,11 @@ const COLUMNS: Record<string, ColumnDef<ResourceRecord>[]> = {
     { title: "Kayıt", dataIndex: "created_at", width: 120, render: formatDate },
   ],
   "admin/settings": [
-    { title: "Anahtar", dataIndex: "key", render: (v) => <Typography.Text code>{String(v ?? "—")}</Typography.Text> },
+    {
+      title: "Anahtar",
+      dataIndex: "key",
+      render: (v) => <Typography.Text code>{String(v ?? "—")}</Typography.Text>,
+    },
     {
       title: "Değer",
       dataIndex: "value",
@@ -198,7 +207,11 @@ export function ResourceListPage({
   ) : null;
 
   const columns = COLUMNS[resource] ?? [
-    { title: "ID", dataIndex: "id", render: (v: unknown) => <Typography.Text code>{String(v)}</Typography.Text> },
+    {
+      title: "ID",
+      dataIndex: "id",
+      render: (v: unknown) => <Typography.Text code>{String(v)}</Typography.Text>,
+    },
   ];
 
   return (

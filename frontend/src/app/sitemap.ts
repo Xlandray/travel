@@ -9,7 +9,14 @@ interface ContentItem {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 1. Sabit Sayfalar (Statik Rotalar)
-  const staticRoutes = ["", "/kurumsal", "/icerikler", "/iletisim", "/auth/login", "/auth/register"].map((route) => ({
+  const staticRoutes = [
+    "",
+    "/kurumsal",
+    "/icerikler",
+    "/iletisim",
+    "/auth/login",
+    "/auth/register",
+  ].map((route) => ({
     url: `https://armonitex.com.tr${route}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
@@ -35,13 +42,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     clearTimeout(timeoutId);
 
     if (!res.ok) return [...staticRoutes, ...serviceRoutes];
-    
+
     const contents: ContentItem[] = await res.json();
     const dynamicRoutes = contents
       .filter((content) => content.is_published)
       .map((content) => ({
         url: `https://armonitex.com.tr/icerik/${content.slug}`,
-        lastModified: new Date(content.created_at || Date.now()), 
+        lastModified: new Date(content.created_at || Date.now()),
         changeFrequency: "monthly" as const,
         priority: 0.7,
       }));

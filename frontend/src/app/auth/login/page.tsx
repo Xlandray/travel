@@ -51,14 +51,15 @@ export default function LoginPage() {
           localStorage.setItem("token", data.access_token);
           localStorage.setItem("access_token", data.access_token);
         }
-        const redirect = typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("redirect")
-          : null;
+        const redirect =
+          typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("redirect")
+            : null;
         router.push(redirect || "/");
       } else {
         const errData = await res.json().catch(() => ({}));
         setErrorMessage(
-          errData.detail || "Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin."
+          errData.detail || "Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.",
         );
       }
     } catch {
@@ -79,11 +80,24 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <form className="space-y-4 card-token bg-surface-token border-token p-6 rounded-2xl shadow-xl" onSubmit={handleLogin}>
+      <form
+        className="space-y-4 card-token bg-surface-token border-token p-6 rounded-2xl shadow-xl"
+        onSubmit={handleLogin}
+      >
         {errorMessage && (
           <div className="p-3 bg-danger-soft-token border border-danger-token rounded-xl text-danger-token text-xs flex items-center gap-2">
-            <svg className="w-4 h-4 flex-shrink-0 text-danger-token" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0 text-danger-token"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>{errorMessage}</span>
           </div>
@@ -116,10 +130,16 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center justify-between text-xs pt-1">
-          <Link href="/auth/register" className="font-semibold text-brand-token hover:text-primary-hover-token">
+          <Link
+            href="/auth/register"
+            className="font-semibold text-brand-token hover:text-primary-hover-token"
+          >
             Hesap oluştur
           </Link>
-          <Link href="/auth/forgot-password" className="font-semibold text-subtle-token hover:text-main-token">
+          <Link
+            href="/auth/forgot-password"
+            className="font-semibold text-subtle-token hover:text-main-token"
+          >
             Şifremi unuttum
           </Link>
         </div>

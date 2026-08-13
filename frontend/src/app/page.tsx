@@ -83,11 +83,13 @@ const SAMPLE_TOURS: Tour[] = [
     id: "11111111-1111-1111-1111-111111111111",
     title: "Kapadokya Turu",
     slug: "kapadokya-turu",
-    description: "Sıcak hava balonları, peribacaları ve yeraltı şehirleriyle dolu unutulmaz bir deneyim.",
+    description:
+      "Sıcak hava balonları, peribacaları ve yeraltı şehirleriyle dolu unutulmaz bir deneyim.",
     days: 3,
     nights: 2,
     price: 6500,
-    image_url: "https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=800&q=80",
+    image_url:
+      "https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=800&q=80",
     departures: [
       {
         id: "55555555-5555-5555-5555-555555555555",
@@ -106,11 +108,13 @@ const SAMPLE_TOURS: Tour[] = [
     id: "22222222-2222-2222-2222-222222222222",
     title: "Salda Gölü ve Pamukkale",
     slug: "salda-golu-ve-pamukkale",
-    description: "Türkiye'nin Maldivleri Salda Gölü'nün turkuaz sularında ve bembeyaz travertenlerde harika bir gün.",
+    description:
+      "Türkiye'nin Maldivleri Salda Gölü'nün turkuaz sularında ve bembeyaz travertenlerde harika bir gün.",
     days: 1,
     nights: 0,
     price: 2100,
-    image_url: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
+    image_url:
+      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
     departures: [
       {
         id: "66666666-6666-6666-6666-666666666666",
@@ -147,7 +151,9 @@ export default function LandingPage() {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(`${getApiBase()}/tours/boarding-points`, { signal: controller.signal });
+        const res = await fetch(`${getApiBase()}/tours/boarding-points`, {
+          signal: controller.signal,
+        });
         clearTimeout(timeoutId);
         if (res.ok) {
           const data = await res.json();
@@ -269,20 +275,50 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs font-semibold text-slate-500">
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-teal-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               {t("hero.badge_tracking")}
             </div>
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-teal-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               {t("hero.badge_points")}
             </div>
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-teal-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               {t("hero.badge_support")}
             </div>
@@ -350,7 +386,12 @@ export default function LandingPage() {
               className="btn-primary-token w-full py-3 px-6 rounded-xl flex items-center justify-center gap-2 transform active:scale-95"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               {t("search.button")}
             </button>
@@ -382,7 +423,10 @@ export default function LandingPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2].map((n) => (
-              <div key={n} className="bg-white border border-slate-200 rounded-2xl p-6 animate-pulse space-y-4 shadow-sm">
+              <div
+                key={n}
+                className="bg-white border border-slate-200 rounded-2xl p-6 animate-pulse space-y-4 shadow-sm"
+              >
                 <div className="h-48 bg-slate-200 rounded-xl" />
                 <div className="h-6 bg-slate-200 rounded w-3/4" />
                 <div className="h-4 bg-slate-200 rounded w-full" />

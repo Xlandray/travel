@@ -44,7 +44,10 @@ export function TourCategoryForm({ mode }: { mode: "create" | "edit" }) {
       {content}
     </Create>
   ) : (
-    <Edit saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }} title="Kategori Düzenle">
+    <Edit
+      saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }}
+      title="Kategori Düzenle"
+    >
       {content}
     </Edit>
   );

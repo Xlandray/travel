@@ -2,12 +2,7 @@ import { Input, InputNumber, Select, Switch } from "antd";
 import { useState } from "react";
 
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: JsonValue }
-  | JsonValue[];
+  string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 
 type JsonType = "string" | "number" | "boolean" | "object" | "array";
 
@@ -93,12 +88,7 @@ export function JsonValueInput({ value, onChange }: JsonValueInputProps) {
       />
     );
   } else if (type === "boolean") {
-    control = (
-      <Switch
-        checked={value === true}
-        onChange={(checked) => onChange?.(checked)}
-      />
-    );
+    control = <Switch checked={value === true} onChange={(checked) => onChange?.(checked)} />;
   } else {
     const parsed = parseJson(raw);
     control = (

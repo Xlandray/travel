@@ -63,11 +63,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function HotelDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function HotelDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [hotel, tours] = await Promise.all([fetchHotel(slug), fetchHotelTours(slug)]);
   if (!hotel) notFound();
@@ -129,9 +125,7 @@ export default async function HotelDetailPage({
               </div>
 
               {hotel.address && (
-                <p className="text-xs text-subtle-token mt-4 leading-relaxed">
-                  {hotel.address}
-                </p>
+                <p className="text-xs text-subtle-token mt-4 leading-relaxed">{hotel.address}</p>
               )}
             </div>
           </div>

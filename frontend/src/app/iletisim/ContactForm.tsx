@@ -21,11 +21,18 @@ export default function ContactForm() {
       });
 
       if (res.ok) {
-        setStatus({ success: true, message: "Teklif talebiniz başarıyla alındı! Ekibimiz kısa sürede sizinle iletişime geçecektir." });
+        setStatus({
+          success: true,
+          message:
+            "Teklif talebiniz başarıyla alındı! Ekibimiz kısa sürede sizinle iletişime geçecektir.",
+        });
         (e.target as HTMLFormElement).reset();
       } else {
         const data = await res.json().catch(() => null);
-        setStatus({ success: false, message: data?.detail || "Mesaj gönderilirken bir hata oluştu." });
+        setStatus({
+          success: false,
+          message: data?.detail || "Mesaj gönderilirken bir hata oluştu.",
+        });
       }
     } catch {
       setStatus({ success: false, message: "Sunucuya bağlanılamadı. Lütfen tekrar deneyin." });
@@ -85,7 +92,9 @@ export default function ContactForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-main-token">Baskı / Hizmet Türü</label>
+            <label className="block text-sm font-semibold text-main-token">
+              Baskı / Hizmet Türü
+            </label>
             <select
               name="service"
               className="mt-1 block w-full px-3 py-2 bg-white-token border border-token rounded-md text-sm text-main-token focus:ring-2 focus:ring-[var(--color-primary)]"
@@ -101,7 +110,9 @@ export default function ContactForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-main-token">Proje Detayları &amp; Mesajınız *</label>
+          <label className="block text-sm font-semibold text-main-token">
+            Proje Detayları &amp; Mesajınız *
+          </label>
           <textarea
             name="message"
             rows={4}

@@ -128,7 +128,11 @@ export function Dashboard() {
             title="Doluluk"
             dataIndex="occupancy_percent"
             render={(value: number) => (
-              <Progress percent={value} size="small" status={value >= 90 ? "exception" : "active"} />
+              <Progress
+                percent={value}
+                size="small"
+                status={value >= 90 ? "exception" : "active"}
+              />
             )}
           />
         </Table>

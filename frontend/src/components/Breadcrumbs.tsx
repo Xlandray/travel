@@ -36,7 +36,10 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbListJsonLd) }}
       />
-      <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-subtle-token">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-subtle-token"
+      >
         <Link href="/" className="hover:text-brand-token transition-colors flex items-center gap-1">
           Ana Sayfa
         </Link>

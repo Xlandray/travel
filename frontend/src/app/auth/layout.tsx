@@ -11,9 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="card-token py-8 px-4 sm:px-10">
-          {children}
-        </div>
+        <div className="card-token py-8 px-4 sm:px-10">{children}</div>
       </div>
     </div>
   );

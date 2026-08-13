@@ -146,7 +146,10 @@ function PaymentContent() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ card_holder: cardHolder, card_number: cardNumber.replace(/\s/g, "") }),
+        body: JSON.stringify({
+          card_holder: cardHolder,
+          card_number: cardNumber.replace(/\s/g, ""),
+        }),
       });
       if (payRes.status === 401) {
         if (typeof window !== "undefined") localStorage.removeItem("token");
@@ -247,7 +250,9 @@ function PaymentContent() {
                   type="text"
                   inputMode="numeric"
                   value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value.replace(/[^\d ]/g, "").slice(0, 19))}
+                  onChange={(e) =>
+                    setCardNumber(e.target.value.replace(/[^\d ]/g, "").slice(0, 19))
+                  }
                   placeholder="0000 0000 0000 0000"
                   required
                   pattern="[0-9 ]{16,19}"
@@ -263,7 +268,9 @@ function PaymentContent() {
                     type="text"
                     inputMode="numeric"
                     value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))}
+                    onChange={(e) =>
+                      setCardExpiry(e.target.value.replace(/[^\d/]/g, "").slice(0, 5))
+                    }
                     placeholder="AA/YY"
                     required
                     pattern="\d{2}/\d{2}"
@@ -325,11 +332,15 @@ function PaymentContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
                   <span className="text-xs text-muted-token uppercase font-bold block">Gidiş</span>
-                  <span className="text-subtle-token font-semibold">{formatDate(booking.start_date)}</span>
+                  <span className="text-subtle-token font-semibold">
+                    {formatDate(booking.start_date)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-xs text-muted-token uppercase font-bold block">Dönüş</span>
-                  <span className="text-subtle-token font-semibold">{formatDate(booking.end_date)}</span>
+                  <span className="text-subtle-token font-semibold">
+                    {formatDate(booking.end_date)}
+                  </span>
                 </div>
               </div>
 
@@ -358,7 +369,8 @@ function PaymentContent() {
             <div className="p-3 bg-brand-token/10 border border-brand-token/20 rounded-xl text-xs text-brand-token space-y-1">
               <div className="font-bold">🔒 Güvenli Simülasyon</div>
               <div className="text-muted-token">
-                Ödeme anında rezervasyonunuz &quot;Onaylandı&quot; durumuna geçer ve koltuklar kesinleşir.
+                Ödeme anında rezervasyonunuz &quot;Onaylandı&quot; durumuna geçer ve koltuklar
+                kesinleşir.
               </div>
             </div>
           </div>
@@ -373,7 +385,9 @@ export default function PaymentPage() {
     <div className="min-h-screen bg-canvas-token text-main-token flex flex-col font-sans">
       <Header />
       <main className="flex-1 flex items-center">
-        <Suspense fallback={<div className="text-center py-20 text-muted-token">Yükleniyor...</div>}>
+        <Suspense
+          fallback={<div className="text-center py-20 text-muted-token">Yükleniyor...</div>}
+        >
           <PaymentContent />
         </Suspense>
       </main>

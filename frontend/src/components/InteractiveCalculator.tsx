@@ -9,9 +9,7 @@ interface InteractiveCalculatorProps {
 }
 
 export default function InteractiveCalculator({ initialSlug }: InteractiveCalculatorProps) {
-  const [selectedSlug, setSelectedSlug] = useState<string>(
-    initialSlug || servicesData[0].slug
-  );
+  const [selectedSlug, setSelectedSlug] = useState<string>(initialSlug || servicesData[0].slug);
   const [widthMeters, setWidthMeters] = useState<number>(2);
   const [heightMeters, setHeightMeters] = useState<number>(1);
   const [quantity, setQuantity] = useState<number>(1);
@@ -29,8 +27,12 @@ export default function InteractiveCalculator({ initialSlug }: InteractiveCalcul
     <div className="card-token p-6 sm:p-8 bg-white-token border-2 border-cyan-token space-y-6 shadow-xs">
       <div className="flex items-center justify-between border-b border-token pb-4 flex-wrap gap-2">
         <div>
-          <span className="badge-cyan-token font-bold text-xs uppercase tracking-wider">Otomatik Hesaplama Matriksi</span>
-          <h3 className="text-xl font-extrabold text-main-token mt-1">Canlı Baskı Fiyat Hesaplayıcı</h3>
+          <span className="badge-cyan-token font-bold text-xs uppercase tracking-wider">
+            Otomatik Hesaplama Matriksi
+          </span>
+          <h3 className="text-xl font-extrabold text-main-token mt-1">
+            Canlı Baskı Fiyat Hesaplayıcı
+          </h3>
         </div>
         <div className="text-xs font-bold text-brand-token bg-cyan-soft-token px-3 py-1.5 rounded-md border border-cyan-token">
           Anında Fiyat Tahmini
@@ -121,7 +123,9 @@ export default function InteractiveCalculator({ initialSlug }: InteractiveCalcul
         {/* Real-time Calculation Result Box */}
         <div className="bg-white-token p-6 rounded-xl border-2 border-cyan-token flex flex-col justify-between space-y-4">
           <div className="space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-subtle-token">Hesaplama Özeti</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-subtle-token">
+              Hesaplama Özeti
+            </span>
             <div className="flex justify-between text-sm text-subtle-token border-b border-token pb-2">
               <span>Seçilen Hizmet:</span>
               <span className="font-bold text-main-token">{currentService.title}</span>
@@ -137,9 +141,12 @@ export default function InteractiveCalculator({ initialSlug }: InteractiveCalcul
           </div>
 
           <div className="pt-2">
-            <div className="text-xs text-subtle-token font-bold">Tahmini Toplam Tutar (KDV Hariç)</div>
+            <div className="text-xs text-subtle-token font-bold">
+              Tahmini Toplam Tutar (KDV Hariç)
+            </div>
             <div className="text-3xl font-extrabold text-brand-token font-mono tracking-tight mt-1">
-              ₺{estimatedTotalPrice.toLocaleString("tr-TR")} <span className="text-xs text-subtle-token font-normal">TL</span>
+              ₺{estimatedTotalPrice.toLocaleString("tr-TR")}{" "}
+              <span className="text-xs text-subtle-token font-normal">TL</span>
             </div>
           </div>
 

@@ -224,7 +224,8 @@ function MyBookingsContent() {
                     </span>
                     {booking.boarding_point_name && (
                       <span>
-                        Biniş: <strong className="text-main-token">{booking.boarding_point_name}</strong>
+                        Biniş:{" "}
+                        <strong className="text-main-token">{booking.boarding_point_name}</strong>
                       </span>
                     )}
                   </div>
@@ -268,7 +269,9 @@ export default function MyBookingsPage() {
     <div className="min-h-screen bg-canvas-token text-main-token flex flex-col font-sans">
       <Header />
       <main className="flex-1">
-        <Suspense fallback={<div className="text-center py-20 text-subtle-token">Yükleniyor...</div>}>
+        <Suspense
+          fallback={<div className="text-center py-20 text-subtle-token">Yükleniyor...</div>}
+        >
           <MyBookingsContent />
         </Suspense>
       </main>

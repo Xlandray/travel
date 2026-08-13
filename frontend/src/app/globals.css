@@ -6,7 +6,7 @@
   --color-brand-emerald: #10b981;
   --color-brand-amber: #f59e0b;
   --color-brand-rose: #f43f5e;
-  
+
   --color-travel-bg: #f8fafc;
   --color-travel-card: #ffffff;
   --color-travel-border: #e2e8f0;
@@ -14,21 +14,21 @@
 
 :root {
   /* Çorlu Travel Design System Tokens */
-  --color-primary: #14b8a6;          /* Teal Brand Main */
+  --color-primary: #14b8a6; /* Teal Brand Main */
   --color-primary-hover: #0d9488;
-  --color-accent: #10b981;           /* Emerald Accent */
-  
-  --color-status-pending: #f59e0b;     /* Warning / Sepette */
-  --color-status-confirmed: #10b981;   /* Success / Ödendi */
-  --color-status-cancelled: #f43f5e;   /* Danger / İptal */
-  
-  --color-canvas: #f8fafc;           /* Light slate background */
-  --color-surface: #ffffff;          /* White card surface */
-  --color-border: #e2e8f0;           /* Light border */
-  
-  --color-text-main: #0f172a;        /* Dark slate text */
-  --color-text-subtle: #475569;      /* Subtitle text */
-  --color-text-muted: #64748b;       /* Muted text */
+  --color-accent: #10b981; /* Emerald Accent */
+
+  --color-status-pending: #f59e0b; /* Warning / Sepette */
+  --color-status-confirmed: #10b981; /* Success / Ödendi */
+  --color-status-cancelled: #f43f5e; /* Danger / İptal */
+
+  --color-canvas: #f8fafc; /* Light slate background */
+  --color-surface: #ffffff; /* White card surface */
+  --color-border: #e2e8f0; /* Light border */
+
+  --color-text-main: #0f172a; /* Dark slate text */
+  --color-text-subtle: #475569; /* Subtitle text */
+  --color-text-muted: #64748b; /* Muted text */
 }
 
 @layer base {
@@ -39,23 +39,48 @@
   body {
     background-color: var(--color-canvas);
     color: var(--color-text-main);
-    font-family: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family:
+      var(--font-inter),
+      "Segoe UI",
+      system-ui,
+      -apple-system,
+      sans-serif;
     overflow-x: hidden;
   }
 }
 
 /* Enforced Design System Utility Classes */
-.bg-canvas-token { background-color: var(--color-canvas); }
-.bg-surface-token { background-color: var(--color-surface); }
-.border-token { border-color: var(--color-border); }
+.bg-canvas-token {
+  background-color: var(--color-canvas);
+}
+.bg-surface-token {
+  background-color: var(--color-surface);
+}
+.border-token {
+  border-color: var(--color-border);
+}
 
-.text-main-token { color: var(--color-text-main); }
-.text-subtle-token { color: var(--color-text-subtle); }
-.text-muted-token { color: var(--color-text-muted); }
-.text-brand-token { color: var(--color-primary); }
-.text-primary-hover-token { color: var(--color-primary-hover); }
-.bg-brand-teal-soft-token { background-color: rgba(20, 184, 166, 0.1); }
-.border-brand-teal-token { border-color: rgba(20, 184, 166, 0.2); }
+.text-main-token {
+  color: var(--color-text-main);
+}
+.text-subtle-token {
+  color: var(--color-text-subtle);
+}
+.text-muted-token {
+  color: var(--color-text-muted);
+}
+.text-brand-token {
+  color: var(--color-primary);
+}
+.text-primary-hover-token {
+  color: var(--color-primary-hover);
+}
+.bg-brand-teal-soft-token {
+  background-color: rgba(20, 184, 166, 0.1);
+}
+.border-brand-teal-token {
+  border-color: rgba(20, 184, 166, 0.2);
+}
 
 /* Booking Status Badge Tokens */
 .badge-status-pending {
@@ -77,13 +102,25 @@
 }
 
 /* Semantic Alert Tokens */
-.text-danger-token { color: var(--color-status-cancelled); }
-.bg-danger-soft-token { background-color: #ffe4e6; }
-.border-danger-token { border-color: #fecdd3; }
+.text-danger-token {
+  color: var(--color-status-cancelled);
+}
+.bg-danger-soft-token {
+  background-color: #ffe4e6;
+}
+.border-danger-token {
+  border-color: #fecdd3;
+}
 
-.text-success-token { color: var(--color-status-confirmed); }
-.bg-success-soft-token { background-color: #d1fae5; }
-.border-success-token { border-color: #a7f3d0; }
+.text-success-token {
+  color: var(--color-status-confirmed);
+}
+.bg-success-soft-token {
+  background-color: #d1fae5;
+}
+.border-success-token {
+  border-color: #a7f3d0;
+}
 
 /* Input Token */
 .input-token {
@@ -94,7 +131,9 @@
   border-radius: 0.75rem;
   font-size: 0.875rem;
   color: var(--color-text-main);
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 .input-token:focus {
   outline: none;
@@ -146,9 +185,13 @@
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   transition: all 0.2s ease-in-out;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.05),
+    0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 .card-token:hover {
   border-color: rgba(20, 184, 166, 0.4);
-  box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.15), 0 8px 10px -6px rgba(20, 184, 166, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(20, 184, 166, 0.15),
+    0 8px 10px -6px rgba(20, 184, 166, 0.1);
 }

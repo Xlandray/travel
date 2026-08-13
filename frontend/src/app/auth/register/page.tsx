@@ -114,7 +114,10 @@ export default function RegisterPage() {
         </button>
 
         <div className="text-center text-sm">
-          <Link href="/auth/login" className="font-semibold text-brand-token hover:text-primary-hover-token">
+          <Link
+            href="/auth/login"
+            className="font-semibold text-brand-token hover:text-primary-hover-token"
+          >
             Zaten hesabınız var mı? Giriş yapın
           </Link>
         </div>

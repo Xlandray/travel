@@ -6,13 +6,15 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "İletişim & Fabrika Adresi",
-  description: "Armonitex & UPD Açıkhava Çözümleri iletişim bilgileri, Ümraniye Dudullu üretim tesisi adresi ve teklif formu.",
+  description:
+    "Armonitex & UPD Açıkhava Çözümleri iletişim bilgileri, Ümraniye Dudullu üretim tesisi adresi ve teklif formu.",
   alternates: {
     canonical: "/iletisim",
   },
   openGraph: {
     title: "İletişim | Armonitex Dijital Baskı & Açıkhava Çözümleri",
-    description: "Yukarı Dudullu, Edep Sk. No:9, 34775 Ümraniye/İstanbul tesisimizden hızlı teklif ve bilgi alın.",
+    description:
+      "Yukarı Dudullu, Edep Sk. No:9, 34775 Ümraniye/İstanbul tesisimizden hızlı teklif ve bilgi alın.",
     url: "https://armonitex.com.tr/iletisim",
   },
 };
@@ -28,9 +30,12 @@ export default function IletisimPage() {
         {/* Page Title Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <span className="badge-cyan-token font-bold text-xs">Ümraniye Üretim Tesisi</span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-main-token tracking-tight">Bizimle İletişime Geçin</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-main-token tracking-tight">
+            Bizimle İletişime Geçin
+          </h1>
           <p className="text-subtle-token text-base">
-            Projenizin detaylarını iletin veya Ümraniye tesisimizi ziyaret ederek baskı numunelerimizi yerinde inceleyin.
+            Projenizin detaylarını iletin veya Ümraniye tesisimizi ziyaret ederek baskı
+            numunelerimizi yerinde inceleyin.
           </p>
         </div>
 
@@ -39,38 +44,56 @@ export default function IletisimPage() {
           {/* Left Column: Contact Cards */}
           <div className="lg:col-span-5 space-y-6">
             <div className="card-token p-6 bg-white-token border-2 border-cyan-token space-y-4">
-              <h2 className="text-xl font-bold text-main-token border-b border-token pb-3">İletişim Bilgileri</h2>
-              
+              <h2 className="text-xl font-bold text-main-token border-b border-token pb-3">
+                İletişim Bilgileri
+              </h2>
+
               <div className="space-y-3 text-sm">
                 <div>
-                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">Fabrika &amp; Üretim Adresi</div>
+                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">
+                    Fabrika &amp; Üretim Adresi
+                  </div>
                   <div className="font-semibold text-main-token mt-1">
                     Armoni Reklam &amp; UPD Açıkhava Çözümleri
                   </div>
                   <div className="text-subtle-token mt-0.5 leading-relaxed">
-                    Yukarı Dudullu, Edep Sk. No:9<br />
+                    Yukarı Dudullu, Edep Sk. No:9
+                    <br />
                     34775 Ümraniye / İstanbul, Türkiye
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-token">
-                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">E-posta</div>
-                  <a href="mailto:info@armonitex.com.tr" className="text-brand-token font-semibold hover:underline mt-0.5 block">
+                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">
+                    E-posta
+                  </div>
+                  <a
+                    href="mailto:info@armonitex.com.tr"
+                    className="text-brand-token font-semibold hover:underline mt-0.5 block"
+                  >
                     info@armonitex.com.tr
                   </a>
                 </div>
 
                 <div className="pt-2 border-t border-token">
-                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">Telefon</div>
-                  <a href="tel:+902160000000" className="text-brand-token font-bold text-base hover:underline mt-0.5 block">
+                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">
+                    Telefon
+                  </div>
+                  <a
+                    href="tel:+902160000000"
+                    className="text-brand-token font-bold text-base hover:underline mt-0.5 block"
+                  >
                     0 (216) 000 00 00
                   </a>
                 </div>
 
                 <div className="pt-2 border-t border-token">
-                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">Çalışma Saatleri</div>
+                  <div className="text-xs font-bold text-subtle-token uppercase tracking-wider">
+                    Çalışma Saatleri
+                  </div>
                   <div className="text-subtle-token mt-0.5">
-                    Hafta İçi: 08:30 - 18:30<br />
+                    Hafta İçi: 08:30 - 18:30
+                    <br />
                     Cumartesi: 09:00 - 14:00
                   </div>
                 </div>

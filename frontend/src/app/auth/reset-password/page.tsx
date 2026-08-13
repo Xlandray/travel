@@ -52,7 +52,7 @@ function ResetPasswordContent() {
       } else {
         const errData = await res.json().catch(() => ({}));
         setErrorMessage(
-          errData.detail || "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş."
+          errData.detail || "Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
         );
       }
     } catch {
@@ -66,7 +66,8 @@ function ResetPasswordContent() {
     return (
       <div className="space-y-6 text-center">
         <div className="p-4 bg-danger-soft-token border border-danger-token text-danger-token text-sm rounded-lg font-semibold">
-          Geçersiz sıfırlama bağlantısı. E-posta kutunuzdaki tam bağlantıyı kullandığınızdan emin olun.
+          Geçersiz sıfırlama bağlantısı. E-posta kutunuzdaki tam bağlantıyı kullandığınızdan emin
+          olun.
         </div>
         <Link href="/auth/forgot-password" className="font-semibold text-brand-token">
           ← Yeni sıfırlama bağlantısı iste
@@ -133,7 +134,10 @@ function ResetPasswordContent() {
       )}
 
       <div className="text-center text-sm">
-        <Link href="/auth/login" className="font-semibold text-brand-token hover:text-primary-hover-token">
+        <Link
+          href="/auth/login"
+          className="font-semibold text-brand-token hover:text-primary-hover-token"
+        >
           ← Giriş sayfasına dön
         </Link>
       </div>

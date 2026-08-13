@@ -1,6 +1,17 @@
 import { Create, Edit, useForm } from "@refinedev/antd";
 import type { BaseRecord, HttpError } from "@refinedev/core";
-import { Button, Divider, Form, Input, InputNumber, Select, Space, Upload, Switch, message } from "antd";
+import {
+  Button,
+  Divider,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Upload,
+  Switch,
+  message,
+} from "antd";
 import { DeleteOutlined, InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import type { UploadChangeParam, UploadFile } from "antd/es/upload";
@@ -82,11 +93,7 @@ function imagesFromFileList(list: UploadFile[] | undefined): { url: string; sort
 }
 
 export function TourForm({ mode }: TourFormProps) {
-  const { formProps, saveButtonProps, form } = useForm<
-    BaseRecord,
-    HttpError,
-    TourFormValues
-  >();
+  const { formProps, saveButtonProps, form } = useForm<BaseRecord, HttpError, TourFormValues>();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [hotels, setHotels] = useState<HotelOption[]>([]);
   const [boardingPoints, setBoardingPoints] = useState<BoardingPointOption[]>([]);
@@ -141,7 +148,11 @@ export function TourForm({ mode }: TourFormProps) {
         <Input placeholder="Örn: Kapadokya ve Balon Turu" />
       </Form.Item>
 
-      <Form.Item label="Slug (URL)" name="slug" tooltip="Boş bırakılırsa tur adından otomatik üretilir.">
+      <Form.Item
+        label="Slug (URL)"
+        name="slug"
+        tooltip="Boş bırakılırsa tur adından otomatik üretilir."
+      >
         <Input placeholder="Örn: kapadokya-vip-balon-turu" />
       </Form.Item>
 
@@ -225,7 +236,10 @@ export function TourForm({ mode }: TourFormProps) {
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">Görselleri buraya sürükleyin veya tıklayarak seçin</p>
-          <p className="ant-upload-hint">Yüksek çözünürlüklü JPEG, PNG veya WEBP dosyaları desteklenir. Birden fazla dosya seçilebilir.</p>
+          <p className="ant-upload-hint">
+            Yüksek çözünürlüklü JPEG, PNG veya WEBP dosyaları desteklenir. Birden fazla dosya
+            seçilebilir.
+          </p>
         </Upload.Dragger>
       </Form.Item>
 
@@ -269,7 +283,11 @@ export function TourForm({ mode }: TourFormProps) {
                   />
                 </Space>
               ))}
-              <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ night_order: fields.length + 1 })}>
+              <Button
+                type="dashed"
+                icon={<PlusOutlined />}
+                onClick={() => add({ night_order: fields.length + 1 })}
+              >
                 Otel Ekle
               </Button>
             </div>
@@ -343,7 +361,11 @@ export function TourForm({ mode }: TourFormProps) {
                 type="dashed"
                 icon={<PlusOutlined />}
                 onClick={() =>
-                  add({ day_number: fields.length + 1, sort_order: fields.length, boarding_point_ids: [] })
+                  add({
+                    day_number: fields.length + 1,
+                    sort_order: fields.length,
+                    boarding_point_ids: [],
+                  })
                 }
               >
                 Gün Ekle

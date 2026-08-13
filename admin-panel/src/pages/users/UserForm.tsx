@@ -10,11 +10,7 @@ type UserFormValues = {
 };
 
 export function UserForm() {
-  const { formProps, saveButtonProps, form } = useForm<
-    BaseRecord,
-    HttpError,
-    UserFormValues
-  >();
+  const { formProps, saveButtonProps, form } = useForm<BaseRecord, HttpError, UserFormValues>();
 
   const content = (
     <Form<UserFormValues> {...formProps} layout="vertical">
@@ -30,7 +26,12 @@ export function UserForm() {
         <Switch />
       </Form.Item>
 
-      <Form.Item label="Süper Admin" name="is_superuser" valuePropName="checked" initialValue={false}>
+      <Form.Item
+        label="Süper Admin"
+        name="is_superuser"
+        valuePropName="checked"
+        initialValue={false}
+      >
         <Switch />
       </Form.Item>
     </Form>

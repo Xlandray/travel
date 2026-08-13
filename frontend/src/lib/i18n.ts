@@ -12,7 +12,8 @@ export const dictionaries = {
     hero: {
       title1: "Geleceğin Teknolojisini",
       title2: "Bugünden İnşa Edin",
-      description: "Sıfır teknik borç vizyonu ile kurumsal altyapınızı güçlendiriyoruz. Güvenli, ölçeklenebilir ve modern yazılım çözümleri.",
+      description:
+        "Sıfır teknik borç vizyonu ile kurumsal altyapınızı güçlendiriyoruz. Güvenli, ölçeklenebilir ve modern yazılım çözümleri.",
       getStarted: "Hemen Başlayın",
       contactUs: "Bize Ulaşın",
     },
@@ -42,7 +43,8 @@ export const dictionaries = {
     hero: {
       title1: "Build Tomorrow's",
       title2: "Technology Today",
-      description: "Empowering your enterprise infrastructure with zero technical debt. Secure, scalable, and modern software solutions.",
+      description:
+        "Empowering your enterprise infrastructure with zero technical debt. Secure, scalable, and modern software solutions.",
       getStarted: "Get Started",
       contactUs: "Contact Us",
     },

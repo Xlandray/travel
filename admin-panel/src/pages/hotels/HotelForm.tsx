@@ -72,7 +72,10 @@ export function HotelForm({ mode }: { mode: "create" | "edit" }) {
       {content}
     </Create>
   ) : (
-    <Edit saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }} title="Otel Düzenle">
+    <Edit
+      saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }}
+      title="Otel Düzenle"
+    >
       {content}
     </Edit>
   );

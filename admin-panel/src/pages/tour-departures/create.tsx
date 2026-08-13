@@ -106,7 +106,12 @@ export const TourDepartureCreate = () => {
           </Form.Item>
         </div>
 
-        <Form.Item label="Satışa Açık mı?" name="is_active" valuePropName="checked" initialValue={true}>
+        <Form.Item
+          label="Satışa Açık mı?"
+          name="is_active"
+          valuePropName="checked"
+          initialValue={true}
+        >
           <Switch />
         </Form.Item>
       </Form>

@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     default: "Çorlu Travel | Tur Acentesi & Seyahat Hizmetleri",
     template: "%s | Çorlu Travel",
   },
-  description: "Çorlu çıkışlı günübirlik ve konaklamalı tur paketleri, lüks otobüslü seyahatler, canlı koltuk takibi ve güvenli online rezervasyon.",
+  description:
+    "Çorlu çıkışlı günübirlik ve konaklamalı tur paketleri, lüks otobüslü seyahatler, canlı koltuk takibi ve güvenli online rezervasyon.",
   keywords: [
     "Çorlu Tur Acentesi",
     "Çorlu Çıkışlı Turlar",
@@ -35,13 +36,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans bg-canvas-token text-main-token selection:bg-teal-500 selection:text-slate-900">
-        <LanguageProvider>
-          {children}
-        </LanguageProvider>
+        <LanguageProvider>{children}</LanguageProvider>
 
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
+        {process.env.NEXT_PUBLIC_GA_ID && <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />}
       </body>
     </html>
   );

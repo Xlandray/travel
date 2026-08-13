@@ -62,11 +62,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ContentDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function ContentDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const content = await getContentBySlug(resolvedParams.slug);
   if (!content) notFound();
@@ -91,7 +87,7 @@ export default async function ContentDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      
+
       <Header />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">

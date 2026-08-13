@@ -1,15 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Button,
-  List,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from "antd";
+import { Button, List, Popconfirm, Select, Space, Table, Tag, Typography, message } from "antd";
 import { axiosInstance } from "../../providers/axios";
 
 type BookingStatus = "pending" | "confirmed" | "cancelled";
@@ -130,7 +120,12 @@ export function BookingsPage() {
           onChange: (page, size) => load(page, size, statusFilter),
         }}
       >
-        <Table.Column<BookingRecord> title="ID" dataIndex="id" ellipsis render={(id: string) => <Typography.Text code>{id.slice(0, 8)}</Typography.Text>} />
+        <Table.Column<BookingRecord>
+          title="ID"
+          dataIndex="id"
+          ellipsis
+          render={(id: string) => <Typography.Text code>{id.slice(0, 8)}</Typography.Text>}
+        />
         <Table.Column<BookingRecord>
           title="Kişi / Tur"
           key="tour"
@@ -146,7 +141,12 @@ export function BookingsPage() {
             </Space>
           )}
         />
-        <Table.Column<BookingRecord> title="Koltuk" dataIndex="seat_count" width={80} align="center" />
+        <Table.Column<BookingRecord>
+          title="Koltuk"
+          dataIndex="seat_count"
+          width={80}
+          align="center"
+        />
         <Table.Column<BookingRecord>
           title="Toplam"
           dataIndex="total_price"
@@ -187,17 +187,11 @@ export function BookingsPage() {
                   Onayla
                 </Button>
               )}
-              {r.payment_id &&
-                r.payment_status === "pending" &&
-                r.status === "pending" && (
-                  <Button
-                    type="default"
-                    size="small"
-                    onClick={() => markPaymentPaid(r.payment_id!)}
-                  >
-                    Ödendi
-                  </Button>
-                )}
+              {r.payment_id && r.payment_status === "pending" && r.status === "pending" && (
+                <Button type="default" size="small" onClick={() => markPaymentPaid(r.payment_id!)}>
+                  Ödendi
+                </Button>
+              )}
               {r.payment_id && r.payment_status === "paid" && (
                 <Popconfirm
                   cancelText="Vazgeç"

@@ -82,19 +82,14 @@ export async function generateMetadata({
   };
 }
 
-export default async function TourDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function TourDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const tour = await fetchTour(slug);
   if (!tour) notFound();
 
-  const photos = [
-    tour.image_url,
-    ...(tour.images ?? []).map((img) => img.url),
-  ].filter((url): url is string => Boolean(url));
+  const photos = [tour.image_url, ...(tour.images ?? []).map((img) => img.url)].filter(
+    (url): url is string => Boolean(url),
+  );
   const gallery = photos.length > 0 ? [...new Set(photos)] : [];
   const sortedStops = [...(tour.route_stops ?? [])].sort((a, b) => a.day_number - b.day_number);
   const sortedHotels = [...(tour.hotels ?? [])].sort((a, b) => a.night_order - b.night_order);
@@ -219,10 +214,7 @@ export default async function TourDetailPage({
 
           {/* RIGHT: Booking Panel */}
           <div className="lg:sticky lg:top-24 h-fit">
-            <TourBookingPanel
-              departures={tour.departures}
-              boardingPoints={tour.boarding_points}
-            />
+            <TourBookingPanel departures={tour.departures} boardingPoints={tour.boarding_points} />
           </div>
         </div>
       </main>

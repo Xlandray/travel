@@ -15,8 +15,18 @@ export default function Logo({ className = "w-full max-w-[350px] h-[100px]" }: L
       {/* Brand Icon & Name */}
       <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
         <div className="w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600 shadow-sm">
-          <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a2.5 2.5 0 002.5-2.5V14M12 22a10 10 0 100-20 10 10 0 000 20z" />
+          <svg
+            className="w-6 h-6 sm:w-8 sm:h-8"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a2.5 2.5 0 002.5-2.5V14M12 22a10 10 0 100-20 10 10 0 000 20z"
+            />
           </svg>
         </div>
         <div className="flex flex-col min-w-0">

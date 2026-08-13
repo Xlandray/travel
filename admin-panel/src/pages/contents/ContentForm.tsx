@@ -38,12 +38,7 @@ export function ContentForm({ mode }: { mode: "create" | "edit" }) {
         <Input.TextArea rows={10} placeholder="İçerik metni..." />
       </Form.Item>
 
-      <Form.Item
-        label="Yayınla"
-        name="is_published"
-        valuePropName="checked"
-        initialValue={false}
-      >
+      <Form.Item label="Yayınla" name="is_published" valuePropName="checked" initialValue={false}>
         <Switch />
       </Form.Item>
     </Form>
@@ -54,7 +49,10 @@ export function ContentForm({ mode }: { mode: "create" | "edit" }) {
       {content}
     </Create>
   ) : (
-    <Edit saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }} title="İçerik Düzenle">
+    <Edit
+      saveButtonProps={{ ...saveButtonProps, onClick: () => form.submit() }}
+      title="İçerik Düzenle"
+    >
       {content}
     </Edit>
   );

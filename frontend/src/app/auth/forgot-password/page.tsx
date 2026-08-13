@@ -63,7 +63,10 @@ export default function ForgotPasswordPage() {
       )}
 
       <div className="text-center text-sm">
-        <Link href="/auth/login" className="font-semibold text-brand-token hover:text-primary-hover-token">
+        <Link
+          href="/auth/login"
+          className="font-semibold text-brand-token hover:text-primary-hover-token"
+        >
           ← Giriş sayfasına dön
         </Link>
       </div>

@@ -77,9 +77,7 @@ function CheckoutContent() {
           const toursData = await toursRes.json();
           if (Array.isArray(toursData)) {
             for (const tour of toursData) {
-              const dep = (tour.departures || []).find(
-                (d: { id: string }) => d.id === departureId
-              );
+              const dep = (tour.departures || []).find((d: { id: string }) => d.id === departureId);
               if (dep) {
                 setDeparture({
                   id: dep.id,
@@ -143,7 +141,9 @@ function CheckoutContent() {
 
       if (res.ok) {
         const data = await res.json();
-        setSuccessMessage(`Rezervasyonunuz başarıyla kilitlendi! ID: ${data.id.slice(0, 8)}... Durum: PENDING`);
+        setSuccessMessage(
+          `Rezervasyonunuz başarıyla kilitlendi! ID: ${data.id.slice(0, 8)}... Durum: PENDING`,
+        );
         setTimeout(() => {
           router.push(`/odeme?booking=${encodeURIComponent(data.id)}`);
         }, 1500);
@@ -190,8 +190,18 @@ function CheckoutContent() {
           >
             {errorMessage && (
               <div className="p-4 bg-danger-soft-token border border-danger-token rounded-xl text-danger-token text-sm flex items-center gap-2">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <span>{errorMessage}</span>
               </div>
@@ -199,8 +209,18 @@ function CheckoutContent() {
 
             {successMessage && (
               <div className="p-4 bg-success-soft-token border border-success-token rounded-xl text-success-token text-sm flex items-center gap-2">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span>{successMessage}</span>
               </div>
@@ -221,7 +241,8 @@ function CheckoutContent() {
                   className="input-token w-full sm:w-auto"
                 />
                 <span className="text-xs text-muted-token">
-                  (Kalan Stok: <strong className="text-brand-token">{departure?.available_seats}</strong> koltuk)
+                  (Kalan Stok:{" "}
+                  <strong className="text-brand-token">{departure?.available_seats}</strong> koltuk)
                 </span>
               </div>
             </div>
@@ -268,24 +289,32 @@ function CheckoutContent() {
 
             <div className="space-y-4 text-sm">
               <div>
-                <span className="text-xs text-muted-token uppercase font-bold block">Seçilen Tur</span>
+                <span className="text-xs text-muted-token uppercase font-bold block">
+                  Seçilen Tur
+                </span>
                 <span className="text-base font-bold text-main-token">{departure?.tour_title}</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
-                  <span className="text-xs text-muted-token uppercase font-bold block">Gidiş Tarihi</span>
+                  <span className="text-xs text-muted-token uppercase font-bold block">
+                    Gidiş Tarihi
+                  </span>
                   <span className="text-subtle-token font-semibold">{departure?.start_date}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-token uppercase font-bold block">Dönüş Tarihi</span>
+                  <span className="text-xs text-muted-token uppercase font-bold block">
+                    Dönüş Tarihi
+                  </span>
                   <span className="text-subtle-token font-semibold">{departure?.end_date}</span>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-token flex items-center justify-between">
                 <span className="text-muted-token">Kişi Başı Fiyat</span>
-                <span className="font-bold text-main-token">{unitPrice.toLocaleString("tr-TR")} ₺</span>
+                <span className="font-bold text-main-token">
+                  {unitPrice.toLocaleString("tr-TR")} ₺
+                </span>
               </div>
 
               <div className="flex items-center justify-between">
@@ -302,9 +331,12 @@ function CheckoutContent() {
             </div>
 
             <div className="p-3 bg-brand-teal-soft-token border border-brand-teal-token rounded-xl text-xs space-y-1">
-              <div className="font-bold text-brand-token">🔒 Çifte Satış (Double-Booking) Koruması</div>
+              <div className="font-bold text-brand-token">
+                🔒 Çifte Satış (Double-Booking) Koruması
+              </div>
               <div className="text-subtle-token">
-                Stok kilidi (with_for_update) rezervasyon anında 15 dakika boyunca koltuğunuzu garantiye alır.
+                Stok kilidi (with_for_update) rezervasyon anında 15 dakika boyunca koltuğunuzu
+                garantiye alır.
               </div>
             </div>
           </div>
@@ -319,7 +351,9 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-canvas-token text-main-token flex flex-col font-sans">
       <Header />
       <main className="flex-1 flex items-center">
-        <Suspense fallback={<div className="text-center py-20 text-subtle-token">Yükleniyor...</div>}>
+        <Suspense
+          fallback={<div className="text-center py-20 text-subtle-token">Yükleniyor...</div>}
+        >
           <CheckoutContent />
         </Suspense>
       </main>

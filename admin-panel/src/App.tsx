@@ -112,26 +112,14 @@ export default function App() {
                   path="/tours"
                   element={<ResourceListPage resource="tours" title="Turlar" />}
                 />
-                <Route
-                  path="/tours/create"
-                  element={<TourCreate />}
-                />
-                <Route
-                  path="/tours/edit/:id"
-                  element={<TourEdit />}
-                />
+                <Route path="/tours/create" element={<TourCreate />} />
+                <Route path="/tours/edit/:id" element={<TourEdit />} />
                 <Route
                   path="/tour-departures"
                   element={<ResourceListPage resource="tour-departures" title="Seferler (Stok)" />}
                 />
-                <Route
-                  path="/tour-departures/create"
-                  element={<TourDepartureCreate />}
-                />
-                <Route
-                  path="/tour-departures/edit/:id"
-                  element={<TourDepartureEdit />}
-                />
+                <Route path="/tour-departures/create" element={<TourDepartureCreate />} />
+                <Route path="/tour-departures/edit/:id" element={<TourDepartureEdit />} />
                 <Route
                   path="/tour-categories"
                   element={<ResourceListPage resource="tour-categories" title="Tur Kategorileri" />}
@@ -148,38 +136,20 @@ export default function App() {
                   path="/hotels"
                   element={<ResourceListPage resource="hotels" title="Oteller" />}
                 />
-                <Route
-                  path="/hotels/create"
-                  element={<HotelForm mode="create" />}
-                />
-                <Route
-                  path="/hotels/edit/:id"
-                  element={<HotelForm mode="edit" />}
-                />
+                <Route path="/hotels/create" element={<HotelForm mode="create" />} />
+                <Route path="/hotels/edit/:id" element={<HotelForm mode="edit" />} />
                 <Route
                   path="/contents"
                   element={<ResourceListPage resource="admin/contents" title="İçerikler" />}
                 />
-                <Route
-                  path="/contents/create"
-                  element={<ContentForm mode="create" />}
-                />
-                <Route
-                  path="/contents/edit/:id"
-                  element={<ContentForm mode="edit" />}
-                />
+                <Route path="/contents/create" element={<ContentForm mode="create" />} />
+                <Route path="/contents/edit/:id" element={<ContentForm mode="edit" />} />
                 <Route
                   path="/settings"
                   element={<ResourceListPage resource="admin/settings" title="Ayarlar" />}
                 />
-                <Route
-                  path="/settings/create"
-                  element={<SettingsForm mode="create" />}
-                />
-                <Route
-                  path="/settings/edit/:id"
-                  element={<SettingsForm mode="edit" />}
-                />
+                <Route path="/settings/create" element={<SettingsForm mode="create" />} />
+                <Route path="/settings/edit/:id" element={<SettingsForm mode="edit" />} />
                 <Route
                   path="/users"
                   element={
@@ -191,10 +161,7 @@ export default function App() {
                     />
                   }
                 />
-                <Route
-                  path="/users/edit/:id"
-                  element={<UserForm />}
-                />
+                <Route path="/users/edit/:id" element={<UserForm />} />
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
               <Route path="*" element={<Navigate replace to="/login" />} />
