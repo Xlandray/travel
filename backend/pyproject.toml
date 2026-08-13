@@ -27,6 +27,7 @@ test = [
 # hook and this gate can disagree about formatting.
 dev = [
     "ruff==0.16.2",
+    "mypy==2.3.0",
 ]
 
 [build-system]
@@ -59,8 +60,22 @@ ignore = ["RUF001", "E501", "UP046"]
 
 # No [tool.black]: `ruff format` is the formatter, and it is black-compatible.
 # black was never installed or invoked anywhere, so its config only misled.
-#
-# No [tool.pyrefly] either, for the same reason: it configured a type checker
-# that was not a dependency, not in any image and not in any gate. There is
-# currently no Python type checker in this project; adding one is a decision,
-# not something a leftover config block should imply.
+
+[tool.mypy]
+python_version = "3.12"
+files = ["app", "tests"]
+# The pydantic plugin teaches mypy that BaseSettings and BaseModel fields come
+# from the environment / validation rather than from explicit constructor args.
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+# Deliberately not --strict yet. This is the level the codebase passes today;
+# tighten it in its own commit so the diff is reviewable.
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# asyncpg ships no py.typed marker.
+module = ["asyncpg.*"]
+ignore_missing_imports = true

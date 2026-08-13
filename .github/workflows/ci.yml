@@ -82,6 +82,9 @@ jobs:
       - name: Format
         run: ruff format --check .
 
+      - name: Types
+        run: mypy
+
       - name: Test
         run: pytest
 

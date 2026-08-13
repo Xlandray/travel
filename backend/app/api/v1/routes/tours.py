@@ -12,10 +12,15 @@ from app.models.booking import Booking
 from app.models.hotel import TourHotel
 from app.models.route import RouteStop
 from app.models.tour import BoardingPoint, Tour, TourCategory, TourDeparture, TourImage
+from app.schemas.hotel import TourHotelRead
 from app.schemas.pagination import Page
+from app.schemas.route import RouteStopRead
 from app.schemas.tour import (
     BoardingPointResponse,
+    TourCategoryResponse,
     TourCreate,
+    TourDepartureResponse,
+    TourImageResponse,
     TourResponse,
     TourUpdate,
 )
@@ -329,13 +334,22 @@ def build_tour_response(tour: Tour) -> TourResponse:
             else "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80"
         ),
         category_id=tour.category_id,
-        category=tour.category,
-        images=[img for img in tour.images if img.is_active],
-        hotels=[h for h in tour.hotels if h.is_active],
-        route_stops=[r for r in tour.route_stops if r.is_active],
-        departures=[d for d in tour.departures if d.is_active],
+        # Pydantic already validated these ORM rows into the response models at
+        # runtime; converting explicitly makes the code say so.
+        category=(TourCategoryResponse.model_validate(tour.category) if tour.category else None),
+        images=[TourImageResponse.model_validate(i) for i in tour.images if i.is_active],
+        hotels=[TourHotelRead.model_validate(h) for h in tour.hotels if h.is_active],
+        route_stops=[RouteStopRead.model_validate(r) for r in tour.route_stops if r.is_active],
+        departures=[
+            TourDepartureResponse.model_validate(d) for d in tour.departures if d.is_active
+        ],
         boarding_points=(
-            [bp for bp in tour.boarding_points if bp.is_active] or DEFAULT_BOARDING_POINTS
+            [
+                BoardingPointResponse.model_validate(bp)
+                for bp in tour.boarding_points
+                if bp.is_active
+            ]
+            or DEFAULT_BOARDING_POINTS
         ),
     )
 
