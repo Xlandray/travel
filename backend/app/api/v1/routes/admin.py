@@ -50,6 +50,8 @@ async def update_user(
         return UserRead.model_validate(user)
     except ResourceNotFoundError as error:
         raise not_found(error) from error
+    except ResourceConflictError as error:
+        raise conflict(error) from error
 
 
 @router.get("/users/{user_id}", response_model=UserRead)

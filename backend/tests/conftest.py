@@ -164,7 +164,7 @@ def client(api: Callable[[User | None], AsyncClient]) -> AsyncClient:
 
 async def _make_user(session: AsyncSession, *, is_superuser: bool, label: str) -> User:
     user = User(
-        email=f"{label}-{uuid.uuid4().hex[:8]}@test.local",
+        email=f"{label}-{uuid.uuid4().hex[:8]}@example.com",
         hashed_password="not-used-tests-override-auth",
         full_name=f"Test {label.title()}",
         is_active=True,

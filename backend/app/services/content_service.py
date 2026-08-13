@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.exceptions import ResourceConflictError, ResourceNotFoundError
 from app.models import Content
-from app.repositories.content_repository import ContentRepository
+from app.repositories.content_repository import ContentPage, ContentRepository
 from app.schemas.content import ContentCreate, ContentUpdate
 
 
@@ -14,8 +14,11 @@ class ContentService:
         self._session = session
         self._contents = ContentRepository(session)
 
-    async def list(self, page: int, page_size: int) -> tuple[list[Content], int]:
+    async def list(self, page: int, page_size: int) -> ContentPage:
         return await self._contents.list((page - 1) * page_size, page_size)
+
+    async def list_published(self, page: int, page_size: int) -> ContentPage:
+        return await self._contents.list_published((page - 1) * page_size, page_size)
 
     async def get(self, content_id: uuid.UUID) -> Content:
         content = await self._contents.get_by_id(content_id)

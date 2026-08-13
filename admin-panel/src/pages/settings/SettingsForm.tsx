@@ -61,12 +61,15 @@ export function SettingsForm({ mode }: SettingsFormProps) {
           rules={[
             { required: true, message: "Lütfen anahtar giriniz." },
             {
-              pattern: /^[a-z][a-z0-9_]*$/,
-              message: "Küçük harfle başlamalı; yalnızca küçük harf, rakam ve alt çizgi kullanın.",
+              // Backend'deki SETTING_KEY_PATTERN ile aynı olmalı.
+              pattern: /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/,
+              message:
+                "Küçük harfle başlamalı; küçük harf, rakam ve alt çizgi kullanın. " +
+                "Bölümleri nokta ile ayırabilirsiniz (örn: site.iletisim.adres).",
             },
           ]}
         >
-          <Input placeholder="Örn: site_baslik" maxLength={100} />
+          <Input placeholder="Örn: site.iletisim.adres" maxLength={100} />
         </Form.Item>
       ) : null}
 

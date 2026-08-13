@@ -94,7 +94,7 @@ async def world(live_sessions: SessionFactory) -> AsyncIterator[World]:
 
         users = [
             User(
-                email=f"race-{uuid.uuid4().hex[:10]}@test.local",
+                email=f"race-{uuid.uuid4().hex[:10]}@example.com",
                 hashed_password="not-used-token-auth",
                 full_name=f"Yarışmacı {index}",
                 is_active=True,
