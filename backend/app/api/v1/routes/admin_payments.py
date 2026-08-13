@@ -1,5 +1,4 @@
 import uuid
-from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -7,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import SessionDep, get_current_superuser
-from app.models.booking import BookingStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.schemas.pagination import Page
 from app.schemas.payment import PaymentResponse
@@ -74,38 +72,5 @@ async def refund_admin_payment(payment_id: uuid.UUID, session: SessionDep) -> Pa
 @router.post("/payments/{payment_id}/confirm", response_model=PaymentResponse)
 async def confirm_transfer_payment(payment_id: uuid.UUID, session: SessionDep) -> PaymentResponse:
     """Manually confirm a TRANSFER payment (admin marks that the remittance arrived)."""
-    payment_uuid = uuid.UUID(payment_id) if isinstance(payment_id, str) else payment_id
-
-    stmt = select(Payment).options(selectinload(Payment.booking)).where(Payment.id == payment_uuid)
-    result = await session.execute(stmt)
-    payment = result.scalar_one_or_none()
-
-    if not payment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Odeme bulunamadi.",
-        )
-
-    if payment.status != PaymentStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Sadece bekleyen (PENDING) odemeler onaylanabilir.",
-        )
-
-    # `payment_service.mock_pay` ile ayni kural: rezervasyon PENDING degilse
-    # odeme tamamlanamaz. Iptal edilmis bir rezervasyonun koltuklari satisa
-    # dondu, CONFIRMED olan ise zaten odenmis demektir.
-    if payment.booking is None or payment.booking.status != BookingStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Rezervasyon bekleyen durumda olmadığı için ödeme onaylanamadı.",
-        )
-
-    payment.status = PaymentStatus.PAID
-    payment.paid_at = datetime.now(UTC)
-    payment.transaction_id = payment.transaction_id or "ADMIN-CONFIRM"
-    payment.booking.status = BookingStatus.CONFIRMED
-
-    await session.commit()
-    await session.refresh(payment)
+    payment = await payment_service.confirm_transfer(session, payment_id)
     return PaymentResponse.model_validate(payment)

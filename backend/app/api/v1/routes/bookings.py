@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking
 from app.models.tour import TourDeparture
 from app.schemas.booking import BookingCreate, BookingResponse, booking_to_response
 from app.services import booking_service
@@ -111,11 +111,12 @@ async def cancel_user_booking(
 ) -> BookingResponse:
     """Cancel a booking manually and restore stock.
 
-    Only a PENDING booking can be dropped this way. A CONFIRMED one has money
-    against it, so it has to go through the admin refund route instead; the
-    service underneath cancels PENDING bookings only, and returning 200 for a
-    booking it had quietly refused to touch told the caller the opposite of what
-    had happened. Cancelling an already-cancelled booking stays a no-op 200.
+    Only ownership is checked here — it cannot change under us. Everything that
+    can (the status, the seat count on the departure) is decided by the service
+    while it holds the row lock, so two clicks on "cancel" release the seats
+    once. Cancelling an already-cancelled booking is a no-op 200; a CONFIRMED
+    one is a 409, because it has money against it and the refund route is its
+    only exit.
     """
     stmt = select(Booking).where(Booking.id == booking_id)
     result = await session.execute(stmt)
@@ -127,12 +128,5 @@ async def cancel_user_booking(
             detail="Rezervasyon bulunamadi.",
         )
 
-    if booking.status == BookingStatus.CONFIRMED:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Onaylanmış rezervasyon buradan iptal edilemez; iade talebi oluşturun.",
-        )
-
-    await booking_service.cancel_expired_booking(booking_id=booking.id, db=session)
-    await session.refresh(booking)
-    return BookingResponse.model_validate(booking)
+    cancelled = await booking_service.cancel_pending_booking(db=session, booking_id=booking.id)
+    return BookingResponse.model_validate(cancelled)

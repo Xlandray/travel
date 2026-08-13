@@ -2,14 +2,45 @@ import logging
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import AsyncSessionLocal
 from app.models.booking import Booking, BookingStatus
 from app.models.tour import TourDeparture
 
 logger = logging.getLogger(__name__)
+
+
+def lock_booking(booking_id: uuid.UUID) -> Select[tuple[Booking]]:
+    """Row lock that also refreshes the session's copy of the row.
+
+    `with_for_update()` on its own is not enough. If the row is already in the
+    session's identity map — and it is, because the route loaded it to check
+    ownership — SQLAlchemy hands back the cached object and throws away the
+    values the locking SELECT just read. The lock is genuinely held, but the
+    status check that follows runs against stale data, so every waiter still
+    sees the booking as it was before the winner committed.
+
+    That is how four concurrent cancels of one three-seat booking returned the
+    same three seats four times, taking a five-seat departure to fourteen.
+    `populate_existing` makes the locked re-read overwrite the cached values.
+    """
+    return (
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+
+
+def lock_departure(departure_id: uuid.UUID) -> Select[tuple[TourDeparture]]:
+    """See `lock_booking`: lock the row and take its committed values."""
+    return (
+        select(TourDeparture)
+        .where(TourDeparture.id == departure_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
 
 
 async def create_booking(
@@ -28,9 +59,8 @@ async def create_booking(
         else boarding_point_id
     )
 
-    # 1. Row-Level Lock: Satiri okurken KILITLE (with_for_update)
-    stmt = select(TourDeparture).where(TourDeparture.id == departure_id_uuid).with_for_update()
-    result = await db.execute(stmt)
+    # 1. Row-Level Lock: Satiri okurken KILITLE (bkz. lock_departure)
+    result = await db.execute(lock_departure(departure_id_uuid))
     departure = result.scalar_one_or_none()
 
     if not departure:
@@ -70,42 +100,46 @@ async def create_booking(
     return new_booking
 
 
-async def cancel_expired_booking(
+async def cancel_pending_booking(
+    db: AsyncSession,
     booking_id: uuid.UUID | str,
-    db: AsyncSession | None = None,
-) -> bool:
-    """Cancels a booking if it is still PENDING and releases reserved seats back to departure."""
+) -> Booking:
+    """Self-service cancel: drop a PENDING booking and release its seats once.
+
+    Every state check happens *after* the row lock is taken, so concurrent calls
+    serialise: the first one cancels, the rest see CANCELLED and return without
+    touching the departure. A CONFIRMED booking has money against it and cannot
+    be dropped here; the refund route is its only exit.
+    """
     booking_uuid = uuid.UUID(booking_id) if isinstance(booking_id, str) else booking_id
 
-    async def _process(session: AsyncSession) -> bool:
-        stmt = select(Booking).where(Booking.id == booking_uuid).with_for_update()
-        res = await session.execute(stmt)
-        booking = res.scalar_one_or_none()
-
-        if not booking or booking.status != BookingStatus.PENDING:
-            return False
-
-        dep_stmt = (
-            select(TourDeparture).where(TourDeparture.id == booking.departure_id).with_for_update()
+    booking = (await db.execute(lock_booking(booking_uuid))).scalar_one_or_none()
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rezervasyon bulunamadi.",
         )
-        dep_res = await session.execute(dep_stmt)
-        departure = dep_res.scalar_one_or_none()
 
-        if departure:
-            departure.available_seats += booking.seat_count
-
-        booking.status = BookingStatus.CANCELLED
-        await session.commit()
-        logger.info(
-            f"Booking {booking_uuid} expired and cancelled. Released {booking.seat_count} seats."
+    if booking.status == BookingStatus.CONFIRMED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Onaylanmış rezervasyon buradan iptal edilemez; iade talebi oluşturun.",
         )
-        return True
 
-    if db is not None:
-        return await _process(db)
-    else:
-        async with AsyncSessionLocal() as session:
-            return await _process(session)
+    if booking.status == BookingStatus.CANCELLED:
+        return booking
+
+    departure = (await db.execute(lock_departure(booking.departure_id))).scalar_one_or_none()
+    if departure:
+        departure.available_seats += booking.seat_count
+
+    booking.status = BookingStatus.CANCELLED
+    await db.commit()
+    # `updated_at` is server-managed (FetchedValue), so it is expired by the
+    # UPDATE and has to be re-read before anything serialises the booking.
+    await db.refresh(booking)
+    logger.info(f"Booking {booking_uuid} cancelled. Released {booking.seat_count} seats.")
+    return booking
 
 
 async def cancel_booking(
@@ -114,14 +148,13 @@ async def cancel_booking(
 ) -> Booking:
     """Admin-level cancel: releases reserved seats back for any non-cancelled booking.
 
-    Unlike ``cancel_expired_booking`` (PENDING-only), this also cancels CONFIRMED
-    bookings and always returns the booking.
+    Unlike ``cancel_pending_booking`` this also cancels CONFIRMED bookings and
+    always returns the booking. Same locking rule: the status is read under the
+    lock, so repeated or concurrent calls release the seats exactly once.
     """
     booking_uuid = uuid.UUID(booking_id) if isinstance(booking_id, str) else booking_id
 
-    stmt = select(Booking).where(Booking.id == booking_uuid).with_for_update()
-    res = await db.execute(stmt)
-    booking = res.scalar_one_or_none()
+    booking = (await db.execute(lock_booking(booking_uuid))).scalar_one_or_none()
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -129,11 +162,7 @@ async def cancel_booking(
         )
 
     if booking.status != BookingStatus.CANCELLED:
-        dep_stmt = (
-            select(TourDeparture).where(TourDeparture.id == booking.departure_id).with_for_update()
-        )
-        dep_res = await db.execute(dep_stmt)
-        departure = dep_res.scalar_one_or_none()
+        departure = (await db.execute(lock_departure(booking.departure_id))).scalar_one_or_none()
         if departure:
             departure.available_seats += booking.seat_count
         booking.status = BookingStatus.CANCELLED
