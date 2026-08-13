@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentSuperuser, SessionDep
+from app.core.slug import generate_slug
 from app.models.tour import TourCategory
 from app.schemas.pagination import Page
 from app.schemas.tour import (
@@ -14,12 +15,6 @@ from app.schemas.tour import (
 )
 
 router = APIRouter()
-
-
-def _generate_slug(name: str) -> str:
-    tbl = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosucgiosu")
-    clean = name.translate(tbl).lower()
-    return "-".join(clean.split())
 
 
 @router.get(
@@ -84,7 +79,12 @@ async def create_category(
     _: CurrentSuperuser,
 ) -> TourCategoryResponse:
     """Create a new tour category."""
-    slug = category_in.slug or _generate_slug(category_in.name)
+    slug = category_in.slug or generate_slug(category_in.name)
+    if not slug:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Kategori adından slug üretilemedi; slug alanını elle doldurun.",
+        )
     existing = await session.execute(select(TourCategory).where(TourCategory.slug == slug))
     if existing.scalar_one_or_none():
         raise HTTPException(

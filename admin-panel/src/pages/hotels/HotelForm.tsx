@@ -4,6 +4,7 @@ import { Form, Input, InputNumber, Switch } from "antd";
 
 type HotelFormValues = {
   name: string;
+  slug?: string;
   city: string;
   address?: string;
   phone?: string;
@@ -32,6 +33,10 @@ export function HotelForm({ mode }: { mode: "create" | "edit" }) {
         rules={[{ required: true, message: "Lütfen şehri giriniz." }]}
       >
         <Input placeholder="Örn: Ürgüp" maxLength={100} />
+      </Form.Item>
+
+      <Form.Item label="Slug" name="slug" tooltip="Boş bırakılırsa otel adından otomatik üretilir">
+        <Input placeholder="Örn: cave-hotel-kapadokya" maxLength={255} />
       </Form.Item>
 
       <div style={{ display: "flex", gap: "16px" }}>

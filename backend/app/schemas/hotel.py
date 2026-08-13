@@ -8,6 +8,7 @@ from app.schemas.base import Schema
 
 class HotelCreate(Schema):
     name: str = Field(min_length=1, max_length=255)
+    slug: str | None = Field(default=None, min_length=1, max_length=255)
     city: str = Field(min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=500)
     phone: str | None = Field(default=None, max_length=50)
@@ -19,6 +20,7 @@ class HotelCreate(Schema):
 
 class HotelUpdate(Schema):
     name: str | None = Field(default=None, min_length=1, max_length=255)
+    slug: str | None = Field(default=None, min_length=1, max_length=255)
     city: str | None = Field(default=None, min_length=1, max_length=100)
     address: str | None = Field(default=None, max_length=500)
     phone: str | None = Field(default=None, max_length=50)
@@ -31,6 +33,7 @@ class HotelUpdate(Schema):
 class HotelRead(Schema):
     id: uuid.UUID
     name: str
+    slug: str
     city: str
     address: str | None
     phone: str | None

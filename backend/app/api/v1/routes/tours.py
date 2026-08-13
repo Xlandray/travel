@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentSuperuser, SessionDep
+from app.core.slug import generate_slug
 from app.models.booking import Booking
 from app.models.hotel import TourHotel
 from app.models.route import RouteStop
@@ -86,12 +87,6 @@ DEFAULT_BOARDING_POINTS: list[BoardingPointResponse] = [
         description="Durak karşısı",
     ),
 ]
-
-
-def generate_slug(title: str) -> str:
-    tbl = str.maketrans("çğıöşüÇĞİÖŞÜ", "cgiosucgiosu")
-    clean = title.translate(tbl).lower()
-    return "-".join(clean.split())
 
 
 @router.get(
@@ -178,6 +173,11 @@ async def create_tour(
 ) -> TourResponse:
     """Creates a new tour in database."""
     slug = tour_in.slug or generate_slug(tour_in.title)
+    if not slug:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Tur başlığından slug üretilemedi; slug alanını elle doldurun.",
+        )
 
     if tour_in.category_id:
         category = await session.get(TourCategory, tour_in.category_id)

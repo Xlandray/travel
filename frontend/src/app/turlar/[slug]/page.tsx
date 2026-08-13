@@ -16,6 +16,7 @@ const getApiBase = () => {
 interface Hotel {
   id: string;
   name: string;
+  slug: string;
   city: string;
   star_rating?: number;
 }
@@ -197,7 +198,11 @@ export default async function TourDetailPage({
                 <h2 className="text-xl font-extrabold text-main-token mb-4">Konaklama</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {sortedHotels.map((th) => (
-                    <div key={th.id} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    <Link
+                      key={th.id}
+                      href={`/oteller/${th.hotel.slug}`}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 hover:border-teal-300 hover:bg-teal-50 transition-colors block"
+                    >
                       <p className="text-sm font-bold text-slate-800">
                         {th.hotel.star_rating ? `${th.hotel.star_rating}★ ` : ""}
                         {th.hotel.name}
@@ -205,7 +210,7 @@ export default async function TourDetailPage({
                       <p className="text-xs text-slate-400 mt-0.5">
                         {th.hotel.city} · {th.night_order}. gece
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
