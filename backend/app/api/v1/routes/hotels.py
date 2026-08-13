@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentSuperuser, SessionDep
+from app.api.v1.routes.tours import build_tour_response
 from app.core.slug import generate_slug
 from app.models.hotel import Hotel, TourHotel
 from app.models.route import RouteStop
@@ -74,9 +75,7 @@ async def list_hotel_tours(hotel_id: str, session: SessionDep) -> list[TourRespo
     )
     result = await session.execute(stmt)
     tours = result.scalars().all()
-    from app.api.v1.routes.tours import _build_tour_response
-
-    return [_build_tour_response(t) for t in tours]
+    return [build_tour_response(t) for t in tours]
 
 
 @router.get("/{hotel_id}", response_model=HotelRead, summary="Otel Detayini Getir")
@@ -86,14 +85,13 @@ async def get_hotel(hotel_id: str, session: SessionDep) -> HotelRead:
 
 
 async def _get_hotel(session: SessionDep, hotel_id: str) -> Hotel:
-    is_uuid = None
+    """Resolve a hotel by UUID or by slug."""
     try:
-        is_uuid = uuid.UUID(hotel_id)
+        lookup = Hotel.id == uuid.UUID(hotel_id)
     except ValueError:
-        is_uuid = None
+        lookup = Hotel.slug == hotel_id
 
-    stmt = select(Hotel).where(Hotel.id == is_uuid if is_uuid else Hotel.slug == hotel_id)
-    result = await session.execute(stmt)
+    result = await session.execute(select(Hotel).where(lookup))
     hotel = result.scalar_one_or_none()
     if not hotel:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Otel bulunamadı.")
@@ -128,11 +126,9 @@ async def create_hotel(
 
 @router.patch("/{hotel_id}", response_model=HotelRead, summary="Otel Guncelle")
 async def update_hotel(
-    hotel_id: uuid.UUID, hotel_in: HotelUpdate, session: SessionDep, _: CurrentSuperuser
+    hotel_id: str, hotel_in: HotelUpdate, session: SessionDep, _: CurrentSuperuser
 ) -> HotelRead:
-    hotel = await session.get(Hotel, hotel_id)
-    if not hotel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Otel bulunamadı.")
+    hotel = await _get_hotel(session, hotel_id)
 
     data = hotel_in.model_dump(exclude_unset=True)
     if "slug" in data:
@@ -172,10 +168,7 @@ async def _ensure_slug_available(
 
 
 @router.delete("/{hotel_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Otel Sil")
-async def delete_hotel(hotel_id: uuid.UUID, session: SessionDep, _: CurrentSuperuser) -> None:
-    hotel = await session.get(Hotel, hotel_id)
-    if not hotel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Otel bulunamadı.")
-
+async def delete_hotel(hotel_id: str, session: SessionDep, _: CurrentSuperuser) -> None:
+    hotel = await _get_hotel(session, hotel_id)
     await session.delete(hotel)
     await session.commit()

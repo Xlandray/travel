@@ -138,7 +138,7 @@ async def list_tours(
         )
         result = await session.execute(stmt)
         tours = result.scalars().all()
-        return Page[TourResponse](data=[_build_tour_response(t) for t in tours], total=total)
+        return Page[TourResponse](data=[build_tour_response(t) for t in tours], total=total)
 
     stmt = base_stmt.options(
         selectinload(Tour.departures),
@@ -154,7 +154,7 @@ async def list_tours(
     if not tours:
         return [TourResponse.model_validate(t, from_attributes=False) for t in DEFAULT_TOURS]
 
-    return [_build_tour_response(t) for t in tours]
+    return [build_tour_response(t) for t in tours]
 
 
 @router.post(
@@ -237,7 +237,7 @@ async def create_tour(
     )
     result = await session.execute(stmt)
     loaded = result.scalar_one()
-    return _build_tour_response(loaded)
+    return build_tour_response(loaded)
 
 
 @router.get(
@@ -298,7 +298,7 @@ async def get_tour_by_slug(tour_id: str, session: SessionDep) -> TourResponse:
                 return TourResponse.model_validate(t)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tur bulunamadı.")
 
-    return _build_tour_response(tour)
+    return build_tour_response(tour)
 
 
 async def _load_boarding_points(session: SessionDep, ids: list[uuid.UUID]) -> list[BoardingPoint]:
@@ -310,7 +310,7 @@ async def _load_boarding_points(session: SessionDep, ids: list[uuid.UUID]) -> li
     return list(result.scalars())
 
 
-def _build_tour_response(tour: Tour) -> TourResponse:
+def build_tour_response(tour: Tour) -> TourResponse:
     min_price = min((d.price for d in tour.departures if d.is_active), default=0.0)
     tour_slug = (tour.slug or "").lower()
     return TourResponse(
@@ -430,7 +430,7 @@ async def update_tour(
     )
     result = await session.execute(stmt)
     loaded = result.scalar_one()
-    return _build_tour_response(loaded)
+    return build_tour_response(loaded)
 
 
 @router.delete("/{tour_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Turu Sil")
