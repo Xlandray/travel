@@ -93,6 +93,11 @@ services:
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
       - ./backend/alembic:/app/alembic
+      # `test_data_dictionary.py` compares the committed document against the
+      # models. The path it resolves — one level above the backend root — is
+      # `/docs` in here and `docs/` in the checkout, so this mount makes the
+      # same test work in the container and in CI, which runs pytest natively.
+      - ./docs:/docs
     profiles: ["test"]
 
 volumes:

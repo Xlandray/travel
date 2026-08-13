@@ -65,4 +65,10 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_payments_status"), table_name="payments")
     op.drop_index(op.f("ix_payments_booking_id"), table_name="payments")
     op.drop_table("payments")
+    # DROP TABLE does not drop the enum types the columns used, and the mess
+    # only surfaces on the *next* upgrade as `type "paymentmethod" already
+    # exists` — one step removed from the migration that caused it. The
+    # neighbouring booking migration always did this; this one did not.
+    sa.Enum(name="paymentstatus").drop(op.get_bind(), checkfirst=False)
+    sa.Enum(name="paymentmethod").drop(op.get_bind(), checkfirst=False)
     # ### end Alembic commands ###
